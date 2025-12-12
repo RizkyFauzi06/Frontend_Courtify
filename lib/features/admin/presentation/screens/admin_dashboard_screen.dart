@@ -107,7 +107,7 @@ class _OwnerRequestListState extends ConsumerState<_OwnerRequestList> {
                 await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => AdminRequestDetailScreen(request: item),
+                    builder: (_) => AdminOwnerVerificationScreen(request: item),
                   ),
                 );
                 _refreshData(); // Refresh pas balik

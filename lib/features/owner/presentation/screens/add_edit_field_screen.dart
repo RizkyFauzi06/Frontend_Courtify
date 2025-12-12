@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../field/data/models/field_model.dart';
 import '../controllers/manage_field_controller.dart';
+import 'package:frontend_futsal/shared/providers/dio_provider.dart';
 
 class AddEditFieldScreen extends ConsumerStatefulWidget {
   final FieldModel? field; // Kalau null = Tambah Baru, Kalau ada = Edit
@@ -41,6 +42,13 @@ class _AddEditFieldScreenState extends ConsumerState<AddEditFieldScreen> {
     final state = ref.watch(fieldFormProvider);
     final isLoading = state.isLoading;
 
+    // --- LOGIKA IP DINAMIS ---
+    final currentBaseUrl = ref.watch(dioProvider).options.baseUrl;
+    final cleanBaseUrl = currentBaseUrl.endsWith('/')
+        ? currentBaseUrl.substring(0, currentBaseUrl.length - 1)
+        : currentBaseUrl;
+    // -------------------------
+
     ref.listen(fieldFormProvider, (prev, next) {
       if (next is AsyncData && !next.isLoading) {
         Navigator.pop(context); // Tutup Form
@@ -69,7 +77,7 @@ class _AddEditFieldScreenState extends ConsumerState<AddEditFieldScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // FOTO PICKER
+              // FOTO PICKER (DIPERBAIKI)
               GestureDetector(
                 onTap: () async {
                   final picked = await ImagePicker().pickImage(
@@ -81,14 +89,15 @@ class _AddEditFieldScreenState extends ConsumerState<AddEditFieldScreen> {
                   height: 150,
                   width: double.infinity,
                   color: Colors.grey[200],
-                  child: _foto != null
-                      ? Image.file(_foto!, fit: BoxFit.cover)
-                      : const Icon(
-                          Icons.add_a_photo,
-                          size: 50,
-                          color: Colors.grey,
-                        ),
+                  child: _buildImageDisplay(
+                    cleanBaseUrl,
+                  ), // Panggil Fungsi Helper
                 ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                "Ketuk kotak di atas untuk ganti foto",
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const SizedBox(height: 16),
 
@@ -154,7 +163,8 @@ class _AddEditFieldScreenState extends ConsumerState<AddEditFieldScreen> {
                                   alamat: _alamatCtrl.text,
                                   harga: _hargaCtrl.text,
                                   deskripsi: _deskripsiCtrl.text,
-                                  fotoPath: _foto?.path, // Kirim foto
+                                  fotoPath: _foto
+                                      ?.path, // Kirim foto baru (kalau ada)
                                   isEdit: widget.field != null,
                                   fieldId: widget.field?.id,
                                   noRek: _rekCtrl.text,
@@ -171,5 +181,33 @@ class _AddEditFieldScreenState extends ConsumerState<AddEditFieldScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildImageDisplay(String baseUrl) {
+    // 1. Kalau user baru ambil foto dari galeri, tampilkan itu
+    if (_foto != null) {
+      return Image.file(_foto!, fit: BoxFit.cover);
+    }
+
+    // Kalau lagi EDIT dan foto lama ada, tampilkan dari server
+    if (widget.field != null && widget.field!.coverFoto.isNotEmpty) {
+      final imageUrl = '$baseUrl/${widget.field!.coverFoto}';
+      return Image.network(
+        imageUrl,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.broken_image, color: Colors.grey),
+              Text("Gagal Load", style: TextStyle(fontSize: 10)),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Kalau tambah baru (kosong) tampilkan icon kamera
+    return const Icon(Icons.add_a_photo, size: 50, color: Colors.grey);
   }
 }

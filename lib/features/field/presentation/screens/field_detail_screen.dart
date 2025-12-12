@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:go_router/go_router.dart'; // Import Router
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../controllers/field_detail_controller.dart';
 import 'package:frontend_futsal/features/field/data/models/field_model.dart';
 import 'package:frontend_futsal/features/field/data/models/review_model.dart';
+import 'package:frontend_futsal/shared/providers/dio_provider.dart';
 
 class FieldDetailScreen extends ConsumerWidget {
   final String fieldId;
@@ -15,6 +16,7 @@ class FieldDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final detailState = ref.watch(fieldDetailControllerProvider(fieldId));
     final primaryColor = Theme.of(context).colorScheme.primary;
+
     return detailState.when(
       // Tampilan Loading
       loading: () =>
@@ -36,7 +38,19 @@ class FieldDetailScreen extends ConsumerWidget {
           symbol: 'Rp ',
           decimalDigits: 0,
         );
-        final imageUrl = '${AppConstants.baseUrl}/${field.coverFoto}';
+
+        // --- PERBAIKAN LOGIKA GAMBAR (IP DINAMIS) ---
+        // 1. Ambil IP aktif dari Provider
+        final currentBaseUrl = ref.watch(dioProvider).options.baseUrl;
+
+        // 2. Bersihkan slash di belakang jika ada
+        final cleanBaseUrl = currentBaseUrl.endsWith('/')
+            ? currentBaseUrl.substring(0, currentBaseUrl.length - 1)
+            : currentBaseUrl;
+
+        // 3. Rakit URL Gambar
+        final imageUrl = '$cleanBaseUrl/${field.coverFoto}';
+        // ---------------------------------------------
 
         return Scaffold(
           extendBodyBehindAppBar: true,
@@ -72,7 +86,7 @@ class FieldDetailScreen extends ConsumerWidget {
                   '/booking/${field.id}',
                   extra: {
                     'name': field.nama,
-                    'price': field.hargaPerJam.toInt(), // Pastikan int
+                    'price': field.hargaPerJam.toInt(),
                   },
                 );
               },
@@ -96,14 +110,23 @@ class FieldDetailScreen extends ConsumerWidget {
                 backgroundColor: primaryColor,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Image.network(
-                    imageUrl,
+                    imageUrl, // <-- Sekarang sudah pakai IP Dinamis
                     fit: BoxFit.cover,
                     errorBuilder: (ctx, err, stack) => Container(
                       color: Colors.grey[300],
-                      child: Icon(
-                        Icons.sports_soccer,
-                        size: 80,
-                        color: Colors.grey[400],
+                      child: const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.sports_soccer,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                          Text(
+                            "Gagal memuat gambar",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
                       ),
                     ),
                   ),

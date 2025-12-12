@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Wajib import ini
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_constants.dart';
+import 'package:frontend_futsal/shared/providers/dio_provider.dart';
 import '../../data/models/field_model.dart';
 
-class FieldCard extends StatelessWidget {
+// Ubah jadi ConsumerWidget
+class FieldCard extends ConsumerWidget {
   final FieldModel field;
   final VoidCallback onTap;
 
   const FieldCard({super.key, required this.field, required this.onTap});
 
+  // Tambah WidgetRef ref
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Ambil warna primer dari tema Courtify
     final primaryColor = Theme.of(context).colorScheme.primary;
 
@@ -21,15 +24,22 @@ class FieldCard extends StatelessWidget {
       decimalDigits: 0,
     );
 
-    // URL Gambar: Gunakan coverFoto yang sudah diparsing
-    final imageUrl = '${AppConstants.baseUrl}/${field.coverFoto}';
+    // --- LOGIKA IP DINAMIS
+    // Minta alamat IP terbaru dari Provider
+    final currentBaseUrl = ref.watch(dioProvider).options.baseUrl;
+
+    // Bersihkan kalau ada garis miring ganda di belakang
+    final cleanBaseUrl = currentBaseUrl.endsWith('/')
+        ? currentBaseUrl.substring(0, currentBaseUrl.length - 1)
+        : currentBaseUrl;
+
+    // Rakit URL Gambar yang benar
+    final imageUrl = '$cleanBaseUrl/${field.coverFoto}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 4, // Naikkan elevation biar terlihat premium
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ), // Sudut lebih melengkung
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -38,22 +48,25 @@ class FieldCard extends StatelessWidget {
           children: [
             // Gambar Lapangan
             SizedBox(
-              height: 180, // Tambah tinggi sedikit
+              height: 180,
               width: double.infinity,
               child: Image.network(
                 field.coverFoto.isNotEmpty
-                    ? imageUrl
+                    ? imageUrl // <-- Pakai URL Dinamis tadi
                     : 'https://via.placeholder.com/400x180.png?text=COURTIFY',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     color: Colors.grey[300],
-                    child: const Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 50,
-                        color: Colors.grey,
-                      ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.broken_image, size: 40, color: Colors.grey),
+                        Text(
+                          "Img Error",
+                          style: TextStyle(color: Colors.grey, fontSize: 10),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -95,7 +108,7 @@ class FieldCard extends StatelessWidget {
                         Icons.sports_soccer,
                         size: 14,
                         color: Theme.of(context).colorScheme.secondary,
-                      ), // Ikon sesuai warna Green Turf
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         field.tipe,

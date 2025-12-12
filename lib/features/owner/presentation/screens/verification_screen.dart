@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_constants.dart';
+import 'package:frontend_futsal/shared/providers/dio_provider.dart';
 import '../../data/repositories/owner_repository.dart';
 import '../controllers/dashboard_controller.dart';
 
@@ -21,6 +21,15 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       decimalDigits: 0,
     );
     final repo = ref.watch(ownerRepositoryProvider);
+
+    String getDynamicImageUrl(String path) {
+      final currentBaseUrl = ref.watch(dioProvider).options.baseUrl;
+      final cleanBaseUrl = currentBaseUrl.endsWith('/')
+          ? currentBaseUrl.substring(0, currentBaseUrl.length - 1)
+          : currentBaseUrl;
+      return '$cleanBaseUrl/$path';
+    }
+    // ----------------------------------
 
     return Scaffold(
       appBar: AppBar(title: const Text("Verifikasi Pembayaran")),
@@ -58,8 +67,17 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             itemCount: list.length,
             itemBuilder: (context, index) {
               final item = list[index];
+
+              // Rakit URL Gambar Bukti Bayar pakai fungsi tadi
+              final proofUrl = getDynamicImageUrl(item.proofUrl);
+
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: Column(
                   children: [
                     // FOTO BUKTI (Klik untuk Zoom)
@@ -69,7 +87,13 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                           context: context,
                           builder: (_) => Dialog(
                             child: Image.network(
-                              '${AppConstants.baseUrl}/${item.proofUrl}',
+                              proofUrl, // <-- Pakai URL Dinamis
+                              errorBuilder: (ctx, err, stack) => const SizedBox(
+                                height: 200,
+                                child: Center(
+                                  child: Text("Gagal memuat gambar"),
+                                ),
+                              ),
                             ),
                           ),
                         );
@@ -77,24 +101,58 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                       child: Container(
                         height: 200,
                         width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(12),
-                          ),
-                          image: DecorationImage(
-                            image: NetworkImage(
-                              '${AppConstants.baseUrl}/${item.proofUrl}',
-                            ),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.zoom_in,
-                            color: Colors.white,
-                            size: 40,
-                          ),
+                        color: Colors.grey[200],
+                        child: Image.network(
+                          proofUrl, // <-- Pakai URL Dinamis
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.broken_image,
+                                    size: 40,
+                                    color: Colors.grey,
+                                  ),
+                                  Text(
+                                    "Bukti Bayar Error",
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null)
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  child,
+                                  // Icon Zoom biar user tau bisa diklik
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.5),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.zoom_in,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -111,12 +169,18 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                               fontSize: 18,
                             ),
                           ),
-                          Text("Booking: ${item.fieldName}"),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Booking: ${item.fieldName}",
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          const SizedBox(height: 8),
                           Text(
                             "Transfer: ${currency.format(item.total)}",
                             style: const TextStyle(
                               color: Colors.green,
                               fontWeight: FontWeight.bold,
+                              fontSize: 16,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -131,6 +195,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                                   },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.red,
+                                    side: const BorderSide(color: Colors.red),
                                   ),
                                   child: const Text("Tolak"),
                                 ),
@@ -142,15 +207,21 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                                   onPressed: () async {
                                     await repo.verifyPayment(item.id, true);
                                     setState(() {}); // Refresh list
+
                                     // Refresh Dashboard juga biar angkanya nambah
                                     ref.refresh(
                                       ownerDashboardControllerProvider,
                                     );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Pembayaran Diterima!"),
-                                      ),
-                                    );
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("Pembayaran Diterima!"),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                    }
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.green,

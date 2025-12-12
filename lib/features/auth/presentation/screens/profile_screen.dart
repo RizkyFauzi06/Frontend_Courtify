@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
+
+// Pastikan import ini sesuai dengan struktur folder kamu
 import '../../../../shared/providers/dio_provider.dart';
 import '../../../../shared/providers/storage_provider.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -19,76 +21,60 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  File? _newPhoto;
   bool _isUploading = false;
-  String? _photoUrlServer;
 
-  // Upload Foto dengan Filename Manual (Anti Error 400)
+  // Fungsi Upload Foto
   Future<void> _uploadFoto() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 70,
+      imageQuality: 70, // Kompres sedikit biar cepat
     );
 
     if (picked != null) {
-      setState(() => _isUploading = true); // Loading mulai
+      setState(() => _isUploading = true);
 
       try {
         String fileName = picked.path.split('/').last;
-        print('--- DEBUG UPLOAD PROFIL ---');
-        print('File: $fileName');
-        print('Target URL: /pengguna/ganti_foto');
 
+        // Siapkan Data
         final formData = FormData.fromMap({
           'foto': await MultipartFile.fromFile(picked.path, filename: fileName),
         });
 
-        // CEK URL INI: Apakah file backend 'routes/pengguna/ganti_foto.dart' ADA?
+        // Kirim ke Backend
         final response = await ref
             .read(dioProvider)
             .post('/pengguna/Foto_profil', data: formData);
 
-        print('--- SUKSES: ${response.statusCode} ---');
-
         if (mounted) {
           final newUrl = response.data['url_foto'];
+
+          // 1. Update Global State (PENTING: Biar Home Screen juga berubah)
           ref.read(userPhotoProvider.notifier).state = newUrl;
+
+          // 2. Simpan ke Storage Lokal (Biar pas restart aplikasi tersimpan)
           await ref
               .read(storageProvider)
               .write(key: 'user_photo', value: newUrl);
 
-          setState(() {
-            _newPhoto = null;
-            _photoUrlServer = newUrl; // Update UI langsung
-          });
-
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Sukses!"),
+              content: Text("Foto berhasil diperbarui!"),
               backgroundColor: Colors.green,
             ),
           );
         }
       } catch (e) {
-        print('--- ERROR UPLOAD: $e ---'); // LIHAT TERMINAL!
-
         String pesan = "Gagal upload.";
         if (e is DioException) {
-          // Kalau 404 -> Berarti nama file backend SALAH / Belum dibuat
-          if (e.response?.statusCode == 404) {
-            pesan =
-                "Error 404: URL '/pengguna/ganti_foto' tidak ditemukan. Cek nama file backend!";
-          } else {
-            pesan = e.response?.data['error'] ?? e.message ?? "Error Server";
-          }
+          pesan = e.response?.data['error'] ?? "Gagal terhubung ke server.";
         }
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(pesan), backgroundColor: Colors.red),
           );
-          setState(() => _newPhoto = null);
         }
       } finally {
         if (mounted) setState(() => _isUploading = false);
@@ -98,7 +84,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Ambil profil user (Nama, Email)
     final profileFuture = ref.watch(authRepositoryProvider).getUserProfile();
+
+    // Ambil URL Foto terbaru dari Global State
+    final globalPhotoUrl = ref.watch(userPhotoProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Profil Saya")),
@@ -113,89 +103,119 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               snapshot.data ??
               UserModel(
                 id: '0',
-                namaLengkap: 'Error',
-                email: 'Error',
+                namaLengkap: 'User',
+                email: 'email@example.com',
                 role: '-',
+                fotoUrl: null,
               );
 
-          // Sinkronisasi Foto ke Home Screen
-          if (user.fotoUrl != null) {
-            Future.microtask(
-              () => ref.read(userPhotoProvider.notifier).state = user.fotoUrl,
-            );
+          // LOGIKA PENENTUAN GAMBAR (Penting!)
+          // Prioritas: 1. Global Provider (Baru upload), 2. Data dari API awal
+          String? displayUrl = globalPhotoUrl ?? user.fotoUrl;
+
+          ImageProvider? imageProvider;
+
+          if (displayUrl != null && displayUrl.isNotEmpty) {
+            // Kita tambahkan timestamp agar Cache di-refresh paksa
+            // Ini solusi agar foto tidak 'stuck' di foto lama
+            final urlWithBase = '${AppConstants.baseUrl}/$displayUrl';
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            imageProvider = NetworkImage('$urlWithBase?t=$timestamp');
           }
 
           return Center(
-            child: Column(
-              children: [
-                const SizedBox(height: 40),
-                GestureDetector(
-                  onTap: _isUploading ? null : _uploadFoto,
-                  child: Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.grey[300],
-                        backgroundImage: _newPhoto != null
-                            ? FileImage(_newPhoto!) as ImageProvider
-                            : (user.fotoUrl != null
-                                  ? NetworkImage(
-                                      '${AppConstants.baseUrl}/${user.fotoUrl}',
-                                    )
-                                  : null),
-                        child: (_newPhoto == null && user.fotoUrl == null)
-                            ? const Icon(
-                                Icons.person,
-                                size: 60,
-                                color: Colors.grey,
-                              )
-                            : null,
-                      ),
-                      if (_isUploading) const CircularProgressIndicator(),
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  const SizedBox(height: 40),
 
-                // DATA DIRI
-                Text(
-                  user.namaLengkap,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  user.email,
-                  style: const TextStyle(color: Colors.grey),
-                ), // <-- Cek ini
+                  // --- BAGIAN FOTO PROFIL ---
+                  GestureDetector(
+                    onTap: _isUploading ? null : _uploadFoto,
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: imageProvider,
+                          onBackgroundImageError: (_, __) {
+                            // Handler kalau URL gambar error/broken
+                          },
+                          child: (imageProvider == null)
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Colors.grey,
+                                )
+                              : null,
+                        ),
 
-                const SizedBox(height: 40),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
-                  title: const Text(
-                    "Keluar",
-                    style: TextStyle(color: Colors.red),
+                        // Loading Indicator saat upload
+                        if (_isUploading)
+                          const Positioned.fill(
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
+                          ),
+
+                        // Icon Kamera Biru
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Colors.blue,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(blurRadius: 5, color: Colors.black26),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  onTap: () async {
-                    await ref.read(storageProvider).deleteAll();
-                    if (context.mounted) context.go('/login');
-                  },
-                ),
-              ],
+
+                  const SizedBox(height: 20),
+
+                  // --- NAMA & EMAIL ---
+                  Text(
+                    user.namaLengkap,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(user.email, style: TextStyle(color: Colors.grey[600])),
+
+                  const SizedBox(height: 40),
+
+                  // --- TOMBOL LOGOUT ---
+                  ListTile(
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text(
+                      "Keluar",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onTap: () async {
+                      // Hapus semua data login
+                      await ref.read(storageProvider).deleteAll();
+                      // Reset state foto
+                      ref.read(userPhotoProvider.notifier).state = null;
+
+                      if (context.mounted) {
+                        context.go('/login');
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
           );
         },

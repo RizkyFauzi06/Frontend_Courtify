@@ -20,19 +20,25 @@ import 'package:frontend_futsal/features/booking/presentation/screens/upload_pay
 import '../../features/home/presentation/screens/owner_request_screen.dart';
 import '../../features/auth/presentation/screens/profile_screen.dart';
 
-final goRouterProvider = Provider<GoRouter>((ref) { // nge provide Gorouter ke variabel goRouterProvider
-  final storage = ref.watch(storageProvider); // baca storage agar meyimpan dan mengambil
+final goRouterProvider = Provider<GoRouter>((ref) {
+  // nge provide Gorouter ke variabel goRouterProvider
+  final storage = ref.watch(
+    storageProvider,
+  ); // baca storage agar meyimpan dan mengambil
 
-  Future<String?> redirect(BuildContext context, GoRouterState state) async { 
-                  // fungsi redirect yang menentukan halaman apa butuh apa
+  Future<String?> redirect(BuildContext context, GoRouterState state) async {
+    // fungsi redirect yang menentukan halaman apa butuh apa
     final isSplash = state.matchedLocation == '/';
-    if (isSplash) { // menampilkan splash screen
+    if (isSplash) {
+      // menampilkan splash screen
       return null;
     }
     print('ROUTER CEK: ${state.matchedLocation}');
 
-    final token = await storage.read(key: 'token'); //daptin token dari backend / DB
-    final loggedIn = token != null; 
+    final token = await storage.read(
+      key: 'token',
+    ); //daptin token dari backend / DB
+    final loggedIn = token != null;
     final isLogin = state.matchedLocation == '/login';
     final isRegister = state.matchedLocation == '/register';
     // SUDAH LOGIN (Cegah balik ke Login/Register)
@@ -126,7 +132,8 @@ final goRouterProvider = Provider<GoRouter>((ref) { // nge provide Gorouter ke v
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
-      )
+      ),
+
       GoRoute(
         path: '/upload-payment/:bookingId',
         name: 'upload-payment',

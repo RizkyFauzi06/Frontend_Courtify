@@ -39,7 +39,7 @@ class _AdminMemberVerificationScreenState
 
     return Column(
       children: [
-        // Header sederhana (karena AppBar dihilangkan)
+        // Header
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -97,38 +97,64 @@ class _AdminMemberVerificationScreenState
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
                     clipBehavior: Clip.antiAlias,
+                    elevation: 3, // Tambah bayangan dikit biar cantik
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // --- BAGIAN FOTO (DIPERBAIKI FITUR ZOOM-NYA) ---
                         if (buktiUrl != null)
                           GestureDetector(
                             onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (_) =>
-                                    Dialog(child: Image.network(buktiUrl)),
-                              );
+                              // PANGGIL FUNGSI ZOOM BARU
+                              _showZoomImage(context, buktiUrl);
                             },
-                            child: Container(
-                              height: 180,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                image: DecorationImage(
-                                  image: NetworkImage(buktiUrl),
-                                  fit: BoxFit.cover,
+                            child: Stack(
+                              children: [
+                                Container(
+                                  height: 180,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[200],
+                                    image: DecorationImage(
+                                      image: NetworkImage(buktiUrl),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.zoom_in,
-                                  color: Colors.white,
-                                  size: 40,
-                                  shadows: [
-                                    Shadow(blurRadius: 10, color: Colors.black),
-                                  ],
+                                // Overlay icon zoom biar user tau bisa diklik
+                                Positioned(
+                                  bottom: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.zoom_in,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          "Lihat Bukti",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           )
                         else
@@ -141,30 +167,51 @@ class _AdminMemberVerificationScreenState
                             ),
                           ),
 
+                        // --- BAGIAN TEXT ---
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                "User: ${item.namaUser}",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.person,
+                                    size: 18,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    item.namaUser,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "Paket: ${item.namaPaket}",
-                                style: const TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "Paket: ${item.namaPaket}",
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    currency.format(item.harga),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text("Transfer: ${currency.format(item.harga)}"),
-
                               const SizedBox(height: 16),
-
                               Row(
                                 children: [
                                   Expanded(
@@ -180,9 +227,7 @@ class _AdminMemberVerificationScreenState
                                       child: const Text("TOLAK"),
                                     ),
                                   ),
-
                                   const SizedBox(width: 16),
-
                                   Expanded(
                                     child: ElevatedButton(
                                       onPressed: () =>
@@ -208,6 +253,47 @@ class _AdminMemberVerificationScreenState
           ),
         ),
       ],
+    );
+  }
+
+  // --- FUNGSI BARU: ZOOM GAMBAR ---
+  void _showZoomImage(BuildContext context, String imageUrl) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent, // Background transparan
+        insetPadding: EdgeInsets.zero, // Full screen feel
+        child: Stack(
+          children: [
+            // Widget agar bisa di-zoom & geser
+            InteractiveViewer(
+              panEnabled: true, // Bisa digeser
+              minScale: 0.1,
+              maxScale: 4.0, // Bisa di-zoom sampai 4x
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain, // Agar foto utuh terlihat
+                ),
+              ),
+            ),
+            // Tombol Close (X)
+            Positioned(
+              top: 40,
+              right: 20,
+              child: CircleAvatar(
+                backgroundColor: Colors.black54,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

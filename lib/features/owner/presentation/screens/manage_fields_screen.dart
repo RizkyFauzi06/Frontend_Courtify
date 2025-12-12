@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../controllers/manage_field_controller.dart';
 import '../../../../core/constants/app_constants.dart';
 import 'add_edit_field_screen.dart';
+import 'package:frontend_futsal/shared/providers/dio_provider.dart';
 
 class ManageFieldsScreen extends ConsumerStatefulWidget {
   const ManageFieldsScreen({super.key});
@@ -27,6 +28,12 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
     // Ambil data lapangan milik owner dari Controller
     final fieldsAsync = ref.watch(myFieldsProvider);
 
+    // LOGIKA IP DINAMIS
+    final currentBaseUrl = ref.watch(dioProvider).options.baseUrl;
+    final cleanBaseUrl = currentBaseUrl.endsWith('/')
+        ? currentBaseUrl.substring(0, currentBaseUrl.length - 1)
+        : currentBaseUrl;
+
     return Scaffold(
       appBar: AppBar(title: const Text("Kelola Lapangan Saya")),
 
@@ -43,7 +50,7 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
 
       body: Column(
         children: [
-          // \SEARCH BAR
+          // SEARCH BAR
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: TextField(
@@ -110,6 +117,10 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                   itemCount: filteredFields.length,
                   itemBuilder: (context, index) {
                     final field = filteredFields[index];
+
+                    // Rakit URL Gambar per item
+                    final imageUrl = '$cleanBaseUrl/${field.coverFoto}';
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
                       shape: RoundedRectangleBorder(
@@ -123,7 +134,7 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                           borderRadius: BorderRadius.circular(8),
                           child: field.coverFoto.isNotEmpty
                               ? Image.network(
-                                  '${AppConstants.baseUrl}/${field.coverFoto}',
+                                  imageUrl, // <-- Pakai URL Dinamis
                                   width: 60,
                                   height: 60,
                                   fit: BoxFit.cover,
@@ -131,7 +142,10 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                                     width: 60,
                                     height: 60,
                                     color: Colors.grey[300],
-                                    child: const Icon(Icons.image),
+                                    child: const Icon(
+                                      Icons.broken_image,
+                                      size: 20,
+                                    ),
                                   ),
                                 )
                               : Container(
