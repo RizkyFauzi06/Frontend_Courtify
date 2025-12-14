@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/date_symbol_data_local.dart'; // <--- 1. IMPORT WAJIB INI
+import 'package:intl/date_symbol_data_local.dart'; // Untuk Format Rupiah/Tanggal
 import 'core/router/router.dart';
 
-// Definisi Warna Courtify
-const Color courtifyPrimaryBlue = Color(0xFF2962FF);
-const Color courtifySecondaryGreen = Color(0xFF00C853);
-
-// UBAH MAIN JADI ASYNC
 void main() async {
-  // Pastikan binding flutter siap dulu
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load Data Tanggal Bahasa Indonesia (id_ID)
+  // Inisialisasi format tanggal/rupiah Indonesia
   await initializeDateFormatting('id_ID', null);
 
-  // Baru jalankan aplikasi
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    // WAJIB ADA PROVIDER SCOPE BIAR RIVERPOD JALAN
+    const ProviderScope(child: MyApp()),
+  );
 }
 
 class MyApp extends ConsumerWidget {
@@ -25,58 +20,42 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Panggil router provider yang sudah kita perbaiki
     final router = ref.watch(goRouterProvider);
 
     return MaterialApp.router(
-      routerConfig: router,
-      title: 'Courtify',
+      title: 'Courtify Futsal',
       debugShowCheckedModeBanner: false,
 
+      // TEMA GLOBAL (Biar warna konsisten Biru/Kuning/dll)
       theme: ThemeData(
-        useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: courtifyPrimaryBlue,
-          primary: courtifyPrimaryBlue,
-          secondary: courtifySecondaryGreen,
+          seedColor: Colors.blue, // Warna Utama Aplikasi
+          primary: Colors.blue,
         ),
-        textTheme: GoogleFonts.poppinsTextTheme(),
+        useMaterial3: true,
 
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey.shade100,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: courtifyPrimaryBlue, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
+        // Atur Header App Bar jadi Biru
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          centerTitle: true,
+          elevation: 0,
         ),
 
+        // [TAMBAHAN BARU] Atur Tombol jadi Biru otomatis
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: courtifyPrimaryBlue,
+            backgroundColor: Colors.blue,
             foregroundColor: Colors.white,
-            elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
         ),
       ),
+
+      routerConfig: router,
     );
   }
 }

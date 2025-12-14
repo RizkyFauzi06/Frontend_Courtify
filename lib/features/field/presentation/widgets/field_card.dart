@@ -26,15 +26,26 @@ class FieldCard extends ConsumerWidget {
 
     // --- LOGIKA IP DINAMIS
     // Minta alamat IP terbaru dari Provider
-    final currentBaseUrl = ref.watch(dioProvider).options.baseUrl;
+    final currentBaseUrl = ref.watch(baseUrlProvider);
 
     // Bersihkan kalau ada garis miring ganda di belakang
     final cleanBaseUrl = currentBaseUrl.endsWith('/')
         ? currentBaseUrl.substring(0, currentBaseUrl.length - 1)
         : currentBaseUrl;
 
+    String imagePath = field.coverFoto; // misal: "http://localhost:8000/public/foto.jpg"
+    if (imagePath.startsWith('http')) {
+        imagePath = Uri.parse(imagePath).path; // jadi: "/public/foto.jpg"
+    }
+    // Hapus slash depan kalau double
+    if (imagePath.startsWith('/') && cleanBaseUrl.endsWith('/')) {
+         imagePath = imagePath.substring(1);
+    } else if (!imagePath.startsWith('/') && !cleanBaseUrl.endsWith('/')) {
+         imagePath = '/$imagePath';
+    }
+
     // Rakit URL Gambar yang benar
-    final imageUrl = '$cleanBaseUrl/${field.coverFoto}';
+    final imageUrl = '$cleanBaseUrl$imagePath';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),

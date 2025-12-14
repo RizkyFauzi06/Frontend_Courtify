@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../../../shared/providers/dio_provider.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../data/repositories/admin_repository.dart';
 import '../../data/models/member_verification_model.dart';
@@ -29,8 +30,42 @@ class _AdminMemberVerificationScreenState
     });
   }
 
+  // Helper untuk membersihkan URL (Sama seperti di Profil)
+  String? _constructDynamicUrl(String? rawPath, String currentIp) {
+    if (rawPath == null || rawPath.isEmpty) return null;
+
+    String cleanPath = rawPath;
+
+    // Buang http://localhost jika tersimpan di DB
+    if (rawPath.startsWith('http')) {
+      try {
+        cleanPath = Uri.parse(rawPath).path;
+      } catch (_) {}
+    }
+
+    // Buang kata 'public/' jika ada (Dart Frog Issue)
+    if (cleanPath.startsWith('/public/')) {
+      cleanPath = cleanPath.substring(7);
+    } else if (cleanPath.startsWith('public/')) {
+      cleanPath = cleanPath.substring(7);
+    }
+
+    // Rapikan Slash
+    if (cleanPath.startsWith('/') && currentIp.endsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    } else if (!cleanPath.startsWith('/') && !currentIp.endsWith('/')) {
+      cleanPath = '/$cleanPath';
+    }
+
+    // Gabung IP Dinamis + Path
+    return '$currentIp$cleanPath';
+  }
+
   @override
   Widget build(BuildContext context) {
+    // AMBIL IP DINAMIS DARI LOGIN SCREEN
+    final currentIp = ref.watch(baseUrlProvider);
+
     final currency = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -90,38 +125,73 @@ class _AdminMemberVerificationScreenState
                 itemCount: list.length,
                 itemBuilder: (context, index) {
                   final item = list[index];
-                  final buktiUrl = item.buktiUrl != null
-                      ? '${AppConstants.baseUrl}/${item.buktiUrl}'
-                      : null;
+
+                  // RAKIT URL MENGGUNAKAN IP DINAMIS
+                  final String? finalUrl = _constructDynamicUrl(
+                    item.buktiUrl,
+                    currentIp,
+                  );
 
                   return Card(
                     margin: const EdgeInsets.only(bottom: 16),
                     clipBehavior: Clip.antiAlias,
-                    elevation: 3, // Tambah bayangan dikit biar cantik
+                    elevation: 3,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- BAGIAN FOTO (DIPERBAIKI FITUR ZOOM-NYA) ---
-                        if (buktiUrl != null)
+                        // --- BAGIAN FOTO ---
+                        if (finalUrl != null)
                           GestureDetector(
                             onTap: () {
-                              // PANGGIL FUNGSI ZOOM BARU
-                              _showZoomImage(context, buktiUrl);
+                              _showZoomImage(context, finalUrl);
                             },
                             child: Stack(
                               children: [
                                 Container(
                                   height: 180,
                                   width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    image: DecorationImage(
-                                      image: NetworkImage(buktiUrl),
-                                      fit: BoxFit.cover,
-                                    ),
+                                  color: Colors.grey[200],
+                                  child: Image.network(
+                                    finalUrl, // Pakai URL Dinamis
+                                    fit: BoxFit.cover,
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return const Center(
+                                            child: CircularProgressIndicator(),
+                                          );
+                                        },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // TAMPILKAN ERROR JELAS DI KARTU
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        alignment: Alignment.center,
+                                        padding: const EdgeInsets.all(8),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons.broken_image,
+                                              color: Colors.red,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              "Gagal Muat: $error",
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.red,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
-                                // Overlay icon zoom biar user tau bisa diklik
+                                // Overlay icon zoom
                                 Positioned(
                                   bottom: 8,
                                   right: 8,
@@ -167,7 +237,7 @@ class _AdminMemberVerificationScreenState
                             ),
                           ),
 
-                        // --- BAGIAN TEXT ---
+                        // BAGIAN TEXT
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
@@ -256,30 +326,40 @@ class _AdminMemberVerificationScreenState
     );
   }
 
-  // --- FUNGSI BARU: ZOOM GAMBAR ---
+  // FUNGSI ZOOM GAMBAR
   void _showZoomImage(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
       builder: (_) => Dialog(
-        backgroundColor: Colors.transparent, // Background transparan
-        insetPadding: EdgeInsets.zero, // Full screen feel
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.zero,
         child: Stack(
           children: [
-            // Widget agar bisa di-zoom & geser
             InteractiveViewer(
-              panEnabled: true, // Bisa digeser
+              panEnabled: true,
               minScale: 0.1,
-              maxScale: 4.0, // Bisa di-zoom sampai 4x
-              child: Container(
+              maxScale: 4.0,
+              child: SizedBox(
                 width: double.infinity,
                 height: double.infinity,
                 child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain, // Agar foto utuh terlihat
+                  imageUrl, // Ini URL yang sudah bersih
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        color: Colors.white,
+                        child: Text(
+                          "Gagal Zoom: $error",
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-            // Tombol Close (X)
             Positioned(
               top: 40,
               right: 20,

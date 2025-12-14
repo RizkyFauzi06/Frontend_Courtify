@@ -5,16 +5,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../shared/providers/dio_provider.dart';
 import '../../../../shared/providers/storage_provider.dart';
 import '../models/auth_response.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../models/user.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(
+    dioProvider,
+  ); // <--- Ini otomatis update kalau IP berubah
   final storage = ref.watch(storageProvider);
-  return AuthRepository(
-    dio,
-    storage,
-  ); // meyimpan nilai dari dio dan storage baru ke provider agar bisa di panggil yang lain
+  return AuthRepository(dio, storage);
 });
 
 class AuthRepository {
@@ -24,37 +22,31 @@ class AuthRepository {
   AuthRepository(this._dio, this._storage);
 
   Future<AuthResponseModel> login(String email, String password) async {
-    final url = '/pengguna/login';
+    const url = '/pengguna/login';
     // Backend Login butuh Huruf Besar
     final body = {'Email': email, 'Password': password};
 
     try {
-      log('--- [DEBUG] MENCOBA LOGIN ---');
+      // [DEBUG] Tampilkan kita sedang menembak ke IP mana
+      log('--- [DEBUG] LOGIN KE: ${_dio.options.baseUrl}$url ---');
       log('BODY: $body');
 
-      // baca API
       final response = await _dio.post(url, data: body);
 
       log('--- [DEBUG] LOGIN SUKSES, PARSING DATA... ---');
 
-      // Definisi authData
       final authData = AuthResponseModel.fromJson(response.data);
 
-      //Simpan Data ke Storage
       await _storage.write(key: 'token', value: authData.token);
       await _storage.write(key: 'user_role', value: authData.user.role);
       await _storage.write(key: 'user_id', value: authData.user.id);
-
-      // Simpan Profil untuk ProfileScreen
       await _storage.write(key: 'user_name', value: authData.user.namaLengkap);
       await _storage.write(key: 'user_email', value: authData.user.email);
-      // Cek null safety untuk foto
       await _storage.write(
         key: 'user_photo',
         value: authData.user.fotoUrl ?? '',
       );
 
-      // Return data yang sudah jadi
       return authData;
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -66,8 +58,7 @@ class AuthRepository {
   // REGISTER
   Future<void> register(String nama, String email, String password) async {
     try {
-      final url = '/pengguna/daftar';
-      // Backend Register butuh Huruf Besar
+      const url = '/pengguna/daftar';
       final body = {
         'Nama_lengkap': nama,
         'Email': email,
@@ -75,13 +66,13 @@ class AuthRepository {
         'Role': 'Customer',
       };
 
-      log('--- REGISTER REQUEST ---');
+      log('--- REGISTER KE: ${_dio.options.baseUrl}$url ---');
       log('BODY: $body');
 
       await _dio.post(url, data: body);
       log('--- REGISTER SUCCESS ---');
     } on DioException catch (e) {
-      throw _handleDioError(e); // Panggil fungsi pintar di bawah
+      throw _handleDioError(e);
     } catch (e) {
       throw 'System Error: $e';
     }
@@ -90,13 +81,9 @@ class AuthRepository {
   Future<UserModel> getUserProfile() async {
     try {
       final response = await _dio.get('/pengguna/profil');
-
-      // Backend kirim: {'user': {...}}
       final data = response.data['user'];
-
       return UserModel.fromJson(data);
     } catch (e) {
-      // Kalau gagal, return user dummy biar gak crash
       return UserModel(
         id: '0',
         namaLengkap: 'Gagal Load',
@@ -108,23 +95,24 @@ class AuthRepository {
   }
 
   String _handleDioError(DioException e) {
-    // Log biar kelihatan di terminal
     log('--- DIO ERROR ANALYSIS ---');
+    log(
+      'Target URL: ${e.requestOptions.baseUrl}${e.requestOptions.path}',
+    ); // Cek dia nembak ke mana
     log('Status: ${e.response?.statusCode}');
-    log('Data Type: ${e.response?.data.runtimeType}'); // Kita cek tipenya apa
     log('Data Content: ${e.response?.data}');
 
     // Masalah Koneksi Fisik
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.connectionError) {
-      return 'Koneksi Gagal. Cek IP (${AppConstants.baseUrl}) & WiFi.';
+      // [PERBAIKAN] Tampilkan IP Dinamis yang dipakai Dio sekarang, BUKAN AppConstants
+      return 'Gagal terhubung ke: ${_dio.options.baseUrl}.\nCek IP Laptop & WiFi.';
     }
 
     // Masalah Respon Server
     if (e.response != null) {
       final data = e.response?.data;
 
-      // KASUS A: Data berupa MAP ({"error": "..."})
       if (data is Map<String, dynamic>) {
         return data['error'] ??
             data['Error'] ??
@@ -132,15 +120,13 @@ class AuthRepository {
             'Terjadi kesalahan (Map)';
       }
 
-      // KASUS B: Data berupa LIST/SET (["Password salah"])
       if (data is List) {
         if (data.isNotEmpty) {
-          return data.first.toString(); // Ambil teks pertamanya
+          return data.first.toString();
         }
         return 'Terjadi kesalahan (List Kosong)';
       }
 
-      // KASUS C: Data berupa String biasa
       return data.toString();
     }
 

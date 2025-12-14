@@ -1,23 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart'; // Import Dio buat request upgrade
 import '../../../../shared/providers/storage_provider.dart';
-import '../../../../shared/providers/dio_provider.dart'; // Import Provider Dio
+import '../../../../shared/providers/dio_provider.dart';
 import '../../../field/presentation/controllers/field_list_controller.dart';
 import '../../../field/presentation/widgets/field_card.dart';
 import '../../../../shared/providers/user_provider.dart';
-import '../../../../core/constants/app_constants.dart'; // Buat Base URL
+import '../../../../core/constants/app_constants.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  // bikin class yang ada sifat customer widget nya
-  const HomeScreen({
-    super.key,
-  }); // const ini agar widget nya ngak terus terus di build
-  // super.key ini super untuk mengakses parent class yaitu consumerstate... dan key itu apa yang di aksesnya
+  const HomeScreen({super.key});
 
-  @override // memberi tahu bahwa aku merubah  class cunsumer state method nya
-  ConsumerState<HomeScreen> createState() => _HomeScreenState(); // membuat objek state untuk widget ini
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
@@ -40,15 +35,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  // HELPER BERSIH-BERSIH URL (Untuk Foto Profil)
+  String? _constructDynamicUrl(String? rawPath, String currentIp) {
+    if (rawPath == null || rawPath.isEmpty) return null;
+
+    String cleanPath = rawPath;
+
+    // Buang http://localhost
+    if (rawPath.startsWith('http')) {
+      try {
+        cleanPath = Uri.parse(rawPath).path;
+      } catch (_) {}
+    }
+
+    // Buang public/
+    if (cleanPath.startsWith('/public/')) {
+      cleanPath = cleanPath.substring(7);
+    } else if (cleanPath.startsWith('public/')) {
+      cleanPath = cleanPath.substring(7);
+    }
+
+    // Rapikan Slash
+    if (cleanPath.startsWith('/') && currentIp.endsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    } else if (!cleanPath.startsWith('/') && !currentIp.endsWith('/')) {
+      cleanPath = '/$cleanPath';
+    }
+
+    return '$currentIp$cleanPath';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // fungsi yang dipanggil setiap ada perubahan
     final fieldListState = ref.watch(fieldListControllerProvider);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
+    // AMBIL IP DINAMIS DARI LOGIN
+    final currentIp = ref.watch(baseUrlProvider);
+
     return Scaffold(
-      // tempat membuat ui dll
       appBar: AppBar(
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
         title: const Text(
           "Courtify",
           style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
@@ -59,41 +89,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             icon: const Icon(Icons.upgrade),
             tooltip: 'Jadi Owner',
             onPressed: () {
-              // Langsung pindah ke halaman form upload KTP
               context.push('/owner-request');
             },
           ),
           // TOMBOL HISTORY
           IconButton(
             icon: const Icon(Icons.history),
-            onPressed: () => context.push('/history'), // kehalaman history
+            onPressed: () => context.push('/history'),
           ),
-          //TOMBOL MEMBERSHIP
+          // TOMBOL MEMBERSHIP
           IconButton(
             icon: const Icon(Icons.card_membership),
             onPressed: () => context.push('/membership'),
           ),
+
+          // FOTO PROFIL
           Padding(
             padding: const EdgeInsets.only(right: 16.0, left: 8.0),
             child: GestureDetector(
               onTap: () => context.push('/profile'),
               child: Consumer(
-                // Bungkus pake Consumer biar bisa nge-watch
                 builder: (context, ref, child) {
-                  // DENGARKAN PERUBAHAN FOTO
-                  final photoUrl = ref.watch(
-                    userPhotoProvider,
-                  ); //membaca dengan riverfod
+                  final rawPhotoPath = ref.watch(userPhotoProvider);
+
+                  // BERSIHKAN URL FOTO PROFIL
+                  final fullProfileUrl = _constructDynamicUrl(
+                    rawPhotoPath,
+                    currentIp,
+                  );
 
                   return CircleAvatar(
                     radius: 18,
                     backgroundColor: Colors.grey.shade300,
-                    // Logika: Kalau ada URL di provider -> Tampilkan Gambar
-                    // Kalau null -> Tampilkan Icon Orang
-                    backgroundImage: photoUrl != null
-                        ? NetworkImage('${AppConstants.baseUrl}/$photoUrl')
+                    backgroundImage: fullProfileUrl != null
+                        ? NetworkImage(fullProfileUrl)
                         : null,
-                    child: photoUrl == null
+                    onBackgroundImageError: (exception, stackTrace) {},
+                    child: fullProfileUrl == null
                         ? const Icon(Icons.person, color: Colors.grey)
                         : null,
                   );
@@ -163,7 +195,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           const SizedBox(height: 8),
 
-          //  LIST LAPANGAN
+          // LIST LAPANGAN
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async => ref.refresh(fieldListControllerProvider),
@@ -205,8 +237,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     itemCount: displayList.length,
                     itemBuilder: (context, index) => FieldCard(
                       field: displayList[index],
-                      onTap: () =>
-                          context.push('/field/${displayList[index].id}'),
+
+                      // [PERBAIKAN UTAMA ADA DI SINI]
+                      // Jangan kirim ID, tapi kirim OBJECT 'extra'
+                      onTap: () => context.push(
+                        '/field-detail', //
+                        extra: displayList[index], // Bawa data lengkap
+                      ),
                     ),
                   );
                 },

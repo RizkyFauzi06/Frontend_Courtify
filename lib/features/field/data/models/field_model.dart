@@ -2,10 +2,8 @@ class FieldModel {
   final int id;
   final int ownerId;
   final String nama;
-  final String
-  tipe; // declare class field dengan data yang dibutuhkan seusai DB
-  final String
-  alamat; // karena flutter ngak bisa nerima JSON mentah harus dalam bentuk objek
+  final String tipe;
+  final String alamat;
   final String deskripsi;
   final double hargaPerJam;
   final String jamBuka;

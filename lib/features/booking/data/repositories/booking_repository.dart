@@ -2,7 +2,6 @@ import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/providers/dio_provider.dart';
-import '../../../../core/constants/app_constants.dart';
 import '../models/booking_history_model.dart';
 
 final bookingRepositoryProvider = Provider(
@@ -57,7 +56,8 @@ class BookingRepository {
       });
 
       log('--- UPLOAD REQUEST ---');
-      log('URL: ${AppConstants.baseUrl}$url');
+      // log('URL: ${AppConstants.baseUrl}$url'); // Hapus ini biar gak bingung log-nya
+      log('Target Endpoint: $url'); 
 
       await _dio.post(url, data: formData);
       log('--- UPLOAD SUCCESS ---');
@@ -120,6 +120,7 @@ class BookingRepository {
     }
   }
 
+  // FUNGSI ULASAN
   Future<void> submitReview({
     required int fieldId,
     required int rating,

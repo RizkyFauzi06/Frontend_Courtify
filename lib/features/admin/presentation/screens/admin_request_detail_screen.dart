@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_constants.dart';
+import '../../../../shared/providers/dio_provider.dart';
 import '../../data/repositories/admin_repository.dart';
 import '../../data/models/owner_request_model.dart';
 
 class AdminOwnerVerificationScreen extends ConsumerStatefulWidget {
-  // 1. TAMBAHKAN VARIABLE INI AGAR BISA MENERIMA DATA 'request'
   final OwnerRequestModel request;
 
-  const AdminOwnerVerificationScreen({
-    super.key,
-    required this.request, // Wajib diisi saat navigasi
-  });
+  const AdminOwnerVerificationScreen({super.key, required this.request});
 
   @override
   ConsumerState<AdminOwnerVerificationScreen> createState() =>
@@ -21,17 +17,37 @@ class AdminOwnerVerificationScreen extends ConsumerStatefulWidget {
 
 class _AdminOwnerVerificationScreenState
     extends ConsumerState<AdminOwnerVerificationScreen> {
-  // Kita tidak perlu _loadData() atau FutureBuilder lagi
-  // karena datanya sudah dikirim lewat 'widget.request'
+  // HELPER PEMBERSIH URL & IP DINAMIS
+  String? _constructDynamicUrl(String? rawPath, String currentIp) {
+    if (rawPath == null || rawPath.isEmpty) return null;
+    String cleanPath = rawPath;
+
+    if (rawPath.startsWith('http')) {
+      try {
+        cleanPath = Uri.parse(rawPath).path;
+      } catch (_) {}
+    }
+
+    if (cleanPath.startsWith('/public/')) {
+      cleanPath = cleanPath.substring(7);
+    } else if (cleanPath.startsWith('public/')) {
+      cleanPath = cleanPath.substring(7);
+    }
+
+    if (cleanPath.startsWith('/') && currentIp.endsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    } else if (!cleanPath.startsWith('/') && !currentIp.endsWith('/')) {
+      cleanPath = '/$cleanPath';
+    }
+
+    return '$currentIp$cleanPath';
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Ambil data dari parameter widget
     final item = widget.request;
-
-    final ktpUrl = item.urlKtp != null
-        ? '${AppConstants.baseUrl}/${item.urlKtp}'
-        : null;
+    final currentIp = ref.watch(baseUrlProvider);
+    final ktpUrl = _constructDynamicUrl(item.urlKtp, currentIp);
 
     return Scaffold(
       appBar: AppBar(
@@ -45,20 +61,41 @@ class _AdminOwnerVerificationScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 1. BAGIAN FOTO KTP ---
+            // BAGIAN FOTO KTP
             if (ktpUrl != null)
               GestureDetector(
                 onTap: () => _showZoomImage(context, ktpUrl),
                 child: Stack(
                   children: [
                     Container(
-                      height: 250, // Lebih besar untuk detail page
+                      height: 250,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
                         image: DecorationImage(
                           image: NetworkImage(ktpUrl),
                           fit: BoxFit.cover,
+                          onError: (exception, stackTrace) {}, // Silent error
+                        ),
+                      ),
+                      child: Image.network(
+                        ktpUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image,
+                                size: 40,
+                                color: Colors.grey,
+                              ),
+                              Text(
+                                "Gagal memuat gambar",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -97,7 +134,7 @@ class _AdminOwnerVerificationScreenState
                 child: const Center(child: Text("Tidak ada foto KTP")),
               ),
 
-            // --- 2. BAGIAN DATA DETAIL ---
+            // BAGIAN DATA DETAIL
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -167,7 +204,7 @@ class _AdminOwnerVerificationScreenState
 
                   const SizedBox(height: 40),
 
-                  // --- 3. TOMBOL AKSI ---
+                  // TOMBOL AKSI
                   Row(
                     children: [
                       Expanded(
@@ -278,7 +315,6 @@ class _AdminOwnerVerificationScreenState
 
       final repo = ref.read(adminRepositoryProvider);
 
-      // LOGIKA REPOSITORY KAMU
       if (isApprove) {
         await repo.approveRequest(idPengajuan);
       } else {
@@ -287,8 +323,7 @@ class _AdminOwnerVerificationScreenState
 
       if (mounted) {
         Navigator.pop(context); // Tutup Loading
-        // Tutup Halaman Detail dan kirim sinyal 'true' (berhasil) agar halaman list me-refresh
-        Navigator.pop(context, true);
+        Navigator.pop(context, true); // Tutup Detail & Refresh List
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

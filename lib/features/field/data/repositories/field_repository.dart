@@ -43,18 +43,18 @@ class FieldRepository {
     }
   }
 
-  // GET REVIEWS (Sesuai Backend)
-  Future<List<ReviewModel>> getReviews(String fieldId) async {
+  // GET REVIEWS
+ Future<List<Map<String, dynamic>>> getReviews(int fieldId) async {
     try {
-      final response = await _dio.get('/lapangan/$fieldId/ulasan');
+      final response = await _dio.get('/lapangan/$fieldId/ulasan'); 
+      
+      final List rawData = (response.data['data'] is List) 
+          ? response.data['data'] 
+          : [];
 
-      // Backend: return {'data': ulasanList}
-      // Kita ambil ['data']
-      final List dataList = response.data['data'] ?? [];
-
-      return dataList.map((json) => ReviewModel.fromJson(json)).toList();
-    } on DioException catch (e) {
-      return []; // Kalau error, anggap ulasan kosong biar halaman tetap jalan
+      return List<Map<String, dynamic>>.from(rawData);
+    } catch (e) {
+      return []; 
     }
   }
 }

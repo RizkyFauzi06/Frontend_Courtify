@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/providers/dio_provider.dart'; 
 import '../controllers/manage_field_controller.dart';
-import '../../../../core/constants/app_constants.dart';
 import 'add_edit_field_screen.dart';
-import 'package:frontend_futsal/shared/providers/dio_provider.dart';
 
 class ManageFieldsScreen extends ConsumerStatefulWidget {
   const ManageFieldsScreen({super.key});
@@ -13,7 +12,6 @@ class ManageFieldsScreen extends ConsumerStatefulWidget {
 }
 
 class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
-  // Variable untuk menyimpan teks pencarian
   String _searchQuery = "";
   final TextEditingController _searchCtrl = TextEditingController();
 
@@ -23,21 +21,47 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
     super.dispose();
   }
 
+  // HELPER BERSIH-BERSIH URL
+  String _constructDynamicUrl(String rawPath, String currentIp) {
+    if (rawPath.isEmpty) return '';
+
+    String cleanPath = rawPath;
+    if (rawPath.startsWith('http')) {
+      try {
+        cleanPath = Uri.parse(rawPath).path;
+      } catch (_) {}
+    }
+
+    // Buang kata 'public/' (Dart Frog Issue)
+    if (cleanPath.startsWith('/public/')) {
+      cleanPath = cleanPath.substring(7);
+    } else if (cleanPath.startsWith('public/')) {
+      cleanPath = cleanPath.substring(7);
+    }
+
+    // Rapikan Slash
+    if (cleanPath.startsWith('/') && currentIp.endsWith('/')) {
+      cleanPath = cleanPath.substring(1);
+    } else if (!cleanPath.startsWith('/') && !currentIp.endsWith('/')) {
+      cleanPath = '/$cleanPath';
+    }
+
+    // Gabung
+    return '$currentIp$cleanPath';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Ambil data lapangan milik owner dari Controller
+    // Ambil data lapangan
     final fieldsAsync = ref.watch(myFieldsProvider);
 
-    // LOGIKA IP DINAMIS
-    final currentBaseUrl = ref.watch(dioProvider).options.baseUrl;
-    final cleanBaseUrl = currentBaseUrl.endsWith('/')
-        ? currentBaseUrl.substring(0, currentBaseUrl.length - 1)
-        : currentBaseUrl;
+    // AMBIL IP DINAMIS YANG BENAR
+    // Jangan pakai dioProvider.options.baseUrl, pakai ini:
+    final currentIp = ref.watch(baseUrlProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Kelola Lapangan Saya")),
 
-      // TOMBOL TAMBAH (+)
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -89,13 +113,11 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(child: Text('Error: $err')),
               data: (fields) {
-                // LOGIKA FILTER PENCARIAN
+                // LOGIKA FILTER
                 final filteredFields = fields.where((field) {
                   final query = _searchQuery.toLowerCase();
                   final nama = field.nama.toLowerCase();
                   final rek = field.nomorRekening.toLowerCase();
-
-                  // Cari berdasarkan Nama ATAU Nomor Rekening
                   return nama.contains(query) || rek.contains(query);
                 }).toList();
 
@@ -104,9 +126,9 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.search_off, size: 60, color: Colors.grey),
+                        Icon(Icons.sports_soccer, size: 60, color: Colors.grey),
                         SizedBox(height: 16),
-                        Text("Lapangan tidak ditemukan."),
+                        Text("Belum ada lapangan."),
                       ],
                     ),
                   );
@@ -118,8 +140,8 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                   itemBuilder: (context, index) {
                     final field = filteredFields[index];
 
-                    // Rakit URL Gambar per item
-                    final imageUrl = '$cleanBaseUrl/${field.coverFoto}';
+                    // RAKIT URL GAMBAR DENGAN FUNGSI BARU
+                    final imageUrl = _constructDynamicUrl(field.coverFoto, currentIp);
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
@@ -129,24 +151,38 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                       elevation: 2,
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(12),
-                        // Foto Lapangan Kecil
+                        // FOTO LAPANGAN
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: field.coverFoto.isNotEmpty
                               ? Image.network(
-                                  imageUrl, // <-- Pakai URL Dinamis
+                                  imageUrl,
                                   width: 60,
                                   height: 60,
                                   fit: BoxFit.cover,
-                                  errorBuilder: (ctx, err, stack) => Container(
-                                    width: 60,
-                                    height: 60,
-                                    color: Colors.grey[300],
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      size: 20,
-                                    ),
-                                  ),
+                                  errorBuilder: (ctx, err, stack) {
+                                    debugPrint("Err Lapangan: $imageUrl -> $err");
+                                    return Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: Colors.grey[300],
+                                      child: const Icon(
+                                        Icons.broken_image,
+                                        size: 20,
+                                        color: Colors.red,
+                                      ),
+                                    );
+                                  },
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                          child: CircularProgressIndicator(strokeWidth: 2)),
+                                    );
+                                  },
                                 )
                               : Container(
                                   width: 60,
@@ -156,7 +192,7 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                                 ),
                         ),
 
-                        // Info Lapangan
+                        // INFO LAPANGAN
                         title: Text(
                           field.nama,
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -166,7 +202,6 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                           children: [
                             Text(field.tipe),
                             const SizedBox(height: 4),
-                            // Tampilkan No Rekening
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 6,
@@ -188,7 +223,7 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                         ),
                         isThreeLine: true,
 
-                        // Tombol Aksi (Edit & Hapus)
+                        // TOMBOL AKSI
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -236,7 +271,7 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                                   await ref
                                       .read(fieldFormProvider.notifier)
                                       .delete(field.id);
-                                  ref.refresh(myFieldsProvider); // Refresh List
+                                  ref.refresh(myFieldsProvider); // Refresh UI
                                 }
                               },
                             ),

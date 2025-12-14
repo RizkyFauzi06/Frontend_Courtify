@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart'; // WAJIB ADA INI
-import '../controllers/auth_controller.dart';
-import 'register_screen.dart'; // Pastikan import ini benar
-import 'package:frontend_futsal/shared/providers/storage_provider.dart';
-
-// Ambil definisi warna
-const Color courtifyPrimaryBlue = Color(0xFF2962FF);
+import 'package:go_router/go_router.dart';
+import '../../../../shared/providers/dio_provider.dart';
+import '../../../../shared/providers/storage_provider.dart';
+import '../../data/repositories/auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -18,268 +15,162 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-  bool _isPasswordVisible = false;
+  bool _isLoading = false;
+  bool _isObscure = true;
 
-  void _showIpDialog(BuildContext context, WidgetRef ref) async {
-    final storage = ref.read(storageProvider);
-    // Baca IP yang tersimpan sekarang (atau default)
-    String? savedIp = await storage.read(key: 'custom_base_url');
-    final ipCtrl = TextEditingController(
-      text: savedIp ?? 'http://192.168.1.X:8080',
-    );
-
-    if (!context.mounted) return;
+  void _showIpSettingsDialog() {
+    final currentIp = ref.read(baseUrlProvider);
+    final ipController = TextEditingController(text: currentIp);
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Konfigurasi Server"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Masukkan IP Laptop Backend (Dart Frog):"),
-            const SizedBox(height: 10),
-            TextField(
-              controller: ipCtrl,
-              decoration: const InputDecoration(
-                hintText: "http://192.168.x.x:8080",
-                border: OutlineInputBorder(),
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Atur IP Server"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Masukkan IP Laptop kamu.",
+                style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
+              TextField(
+                controller: ipController,
+                decoration: const InputDecoration(
+                  hintText: "http://192.168.x.x:8000",
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Batal"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final newIp = ipController.text.trim();
+                if (newIp.isNotEmpty) {
+                  await ref
+                      .read(storageProvider)
+                      .write(key: 'custom_base_url', value: newIp);
+                  ref.read(baseUrlProvider.notifier).state = newIp;
+                  if (context.mounted) Navigator.pop(context);
+                }
+              },
+              child: const Text("Simpan"),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              // SIMPAN IP BARU KE STORAGE
-              await storage.write(
-                key: 'custom_base_url',
-                value: ipCtrl.text.trim(),
-              );
-              if (context.mounted) {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Server diubah ke: ${ipCtrl.text}")),
-                );
-              }
-            },
-            child: const Text("Simpan"),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Listener: Ini yang bertugas memantau hasil Login
-    ref.listen<AsyncValue<void>>(authControllerProvider, (previous, next) {
-      // 1. Jika Gagal
-      if (next is AsyncError) {
+  Future<void> _login() async {
+    setState(() => _isLoading = true);
+    try {
+      // Perform Login
+      final authData = await ref
+          .read(authRepositoryProvider)
+          .login(_emailController.text, _passwordController.text);
+
+      if (mounted) {
+        //CHECK ROLE & REDIRECT CORRECTLY
+        final role = authData.user.role.toLowerCase();
+
+        if (role == 'admin') {
+          context.go('/admin-dashboard');
+        } else if (role == 'owner') {
+          context.go('/owner-dashboard');
+        } else {
+          // Default to Customer Home
+          context.go('/home');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(next.error.toString()),
+            content: Text("Login Gagal: $e"),
             backgroundColor: Colors.red,
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
-      // 2. Jika Sukses
-      if (next is AsyncData && !next.isLoading) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Login Berhasil! Mengalihkan...'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        // >>> INI KUNCI YANG HILANG KEMARIN <<<
-        // Paksa pindah ke Home Screen
-        context.go('/home');
-      }
-    });
-
-    final isLoading = ref.watch(authControllerProvider).isLoading;
-
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.grey),
-            tooltip: 'Ganti Server IP',
-            onPressed: () => _showIpDialog(context, ref), // <--- FUNGSI BARU
+            onPressed: _showIpSettingsDialog,
           ),
         ],
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Logo Courtify
-                  Center(
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: courtifyPrimaryBlue.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: courtifyPrimaryBlue.withOpacity(0.2),
-                              width: 2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.sports_soccer,
-                            size: 60,
-                            color: courtifyPrimaryBlue,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          "COURTIFY",
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.0,
-                            color: courtifyPrimaryBlue,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Input Email
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      hintText: 'contoh@email.com',
-                    ),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Email tidak boleh kosong' : null,
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Input Password
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: !_isPasswordVisible,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (value) =>
-                        value!.isEmpty ? 'Password tidak boleh kosong' : null,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Tombol Login
-                  SizedBox(
-                    height: 55,
-                    child: ElevatedButton(
-                      onPressed: isLoading
-                          ? null
-                          : () async {
-                              if (_formKey.currentState!.validate()) {
-                                //Panggil Login dan Tunggu Hasil Role-nya
-                                final role = await ref
-                                    .read(authControllerProvider.notifier)
-                                    .login(
-                                      _emailController.text,
-                                      _passwordController.text,
-                                    );
-
-                                // Cek Role & Pindah Halaman
-                                // di dalam tombol Logi
-                                if (role != null && context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Login Berhasil!'),
-                                    ),
-                                  );
-
-                                  if (role == 'Admin') {
-                                    context.go('/admin-dashboard'); // KE ADMIN
-                                  } else if (role == 'Owner') {
-                                    context.go('/owner-dashboard'); // KE OWNER
-                                  } else {
-                                    context.go('/home'); // KE CUSTOMER
-                                  }
-                                }
-                              }
-                            },
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 3,
-                              ),
-                            )
-                          : const Text('MASUK SEKARANG'),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Link ke Register
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Belum punya akun? ",
-                        style: TextStyle(color: Colors.grey.shade600),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          // Gunakan context.push agar bisa kembali ke login
-                          context.push('/register');
-                        },
-                        child: const Text(
-                          "Daftar",
-                          style: TextStyle(
-                            color: courtifyPrimaryBlue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(Icons.sports_soccer, size: 80, color: Colors.blue),
+              const SizedBox(height: 16),
+              const Text(
+                "Courtify Login",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-            ),
+              const SizedBox(height: 32),
+              TextField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: "Email",
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                obscureText: _isObscure,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  prefixIcon: const Icon(Icons.lock),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isObscure ? Icons.visibility : Icons.visibility_off,
+                    ),
+                    onPressed: () => setState(() => _isObscure = !_isObscure),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _login,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("MASUK", style: TextStyle(fontSize: 16)),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => context.push('/register'),
+                child: const Text("Belum punya akun? Daftar di sini"),
+              ),
+            ],
           ),
         ),
       ),
