@@ -4,10 +4,9 @@
 
 
 PANDUAN INSTALASI APLIKASI RESERVASI LAPANGAN
-File zip ini berisi source code Frontend (Flutter) dan Backend (Dart Frog).
-Ikuti langkah-langkah di bawah ini secara berurutan agar aplikasi berjalan lancar.
+Aplikasi ini berbasis local host sehingga kalian harus melakukan preparasi agar apk ini dapat berjalan di komputer kalian
 
-BAGIAN 1: SETUP DATABASE (MySQL)
+BAGIAN 1: SETUP DATABASE (MySQL) // ada di repository backend
 Sebelum menjalankan aplikasi, database harus disiapkan terlebih dahulu agar tidak terjadi error relasi antar tabel.
 
 1.Buka Aplikasi Database Manager (DBeaver, HeidiSQL, atau phpMyAdmin via XAMPP).
