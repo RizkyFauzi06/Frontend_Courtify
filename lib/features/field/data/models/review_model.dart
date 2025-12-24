@@ -29,7 +29,7 @@ class ReviewModel {
           DateTime.tryParse(json['Dibuat_pada']?.toString() ?? '') ??
           DateTime.now(),
 
-      // Backend: Foto_pengguna (Alias dari query SQL kamu)
+      // Backend: Foto_pengguna
       fotoPengguna: json['Foto_pengguna']?.toString(),
     );
   }

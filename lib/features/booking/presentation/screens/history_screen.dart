@@ -49,7 +49,7 @@ class HistoryScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header: Nama & Status
+                      // Header Nama & Status
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -101,10 +101,10 @@ class HistoryScreen extends ConsumerWidget {
                             ),
                           ),
 
-                          // --- AREA TOMBOL ---
+                          // AREA TOMBOL
                           Row(
                             children: [
-                              // Tombol BATAL (Hanya kalau belum bayar)
+                              // Tombol BATAL Hanya kalau belum bayar
                               if (isUnpaid)
                                 TextButton(
                                   onPressed: () async {
@@ -116,7 +116,7 @@ class HistoryScreen extends ConsumerWidget {
                                   ),
                                 ),
 
-                              // Tombol BAYAR (Hanya kalau belum bayar)
+                              // Tombol BAYAR Hanya kalau belum bayar
                               if (isUnpaid)
                                 ElevatedButton(
                                   onPressed: () {

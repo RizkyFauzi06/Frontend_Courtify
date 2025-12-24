@@ -1,6 +1,6 @@
 class BookingHistoryModel {
   final int id;
-  final int fieldId; // ID Lapangan (Penting buat Ulasan)
+  final int fieldId; // ID Lapangan untuk ulasan
   final String namaLapangan;
   final String tipeLapangan;
   final DateTime waktuMulai;

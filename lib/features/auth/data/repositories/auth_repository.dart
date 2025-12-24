@@ -105,7 +105,7 @@ class AuthRepository {
     // Masalah Koneksi Fisik
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.connectionError) {
-      // [PERBAIKAN] Tampilkan IP Dinamis yang dipakai Dio sekarang, BUKAN AppConstants
+      // Tampilkan IP Dinamis yang dipakai Dio sekarang
       return 'Gagal terhubung ke: ${_dio.options.baseUrl}.\nCek IP Laptop & WiFi.';
     }
 

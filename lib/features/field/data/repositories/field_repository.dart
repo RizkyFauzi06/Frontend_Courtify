@@ -44,17 +44,19 @@ class FieldRepository {
   }
 
   // GET REVIEWS
- Future<List<Map<String, dynamic>>> getReviews(int fieldId) async {
+  Future<List<Map<String, dynamic>>> getReviews(int fieldId) async {
     try {
-      final response = await _dio.get('/lapangan/$fieldId/ulasan'); 
-      
-      final List rawData = (response.data['data'] is List) 
-          ? response.data['data'] 
+      final response = await _dio.get(
+        '/lapangan/$fieldId/ulasan',
+      ); //sesuai route backend
+
+      final List rawData = (response.data['data'] is List)
+          ? response.data['data']
           : [];
 
       return List<Map<String, dynamic>>.from(rawData);
     } catch (e) {
-      return []; 
+      return [];
     }
   }
 }

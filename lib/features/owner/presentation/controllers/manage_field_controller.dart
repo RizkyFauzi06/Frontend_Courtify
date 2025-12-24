@@ -21,7 +21,6 @@ final myFieldsProvider = FutureProvider.autoDispose<List<FieldModel>>((
   final allFields = await repo.getMyFields(query: query);
 
   // FILTER: Hanya ambil yang ownerId-nya sama dengan ID Saya
-  // Kalau ID Saya 0 (error/logout), kembalikan list kosong biar aman
   if (myId == 0) return [];
 
   return allFields.where((field) => field.ownerId == myId).toList();

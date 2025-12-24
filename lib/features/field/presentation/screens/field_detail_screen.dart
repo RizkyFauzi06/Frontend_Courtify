@@ -55,7 +55,7 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // 1. HEADER GAMBAR
+          // HEADER GAMBAR
           Positioned(
             top: 0,
             left: 0,
@@ -75,7 +75,7 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                 : Container(color: Colors.blueAccent),
           ),
 
-          // 2. TOMBOL BACK
+          // TOMBOL BACK
           Positioned(
             top: 40,
             left: 16,
@@ -88,11 +88,10 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
             ),
           ),
 
-          // 3. KONTEN DETAIL (Scrollable)
+          // KONTEN DETAIL
           Positioned.fill(
             top: 250,
             child: Container(
-              // Padding bawah 80 biar konten paling bawah gak ketutup tombol Booking
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 80),
               decoration: const BoxDecoration(
                 color: Colors.white,
@@ -127,7 +126,7 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Lokasi
                     Row(
                       children: [
@@ -150,7 +149,10 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                     // Deskripsi
                     const Text(
                       "Deskripsi",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -166,7 +168,10 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                     // Ulasan Pengguna
                     const Text(
                       "Ulasan Pengguna",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
 
@@ -186,7 +191,9 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Center(
-                              child: Text("Belum ada ulasan untuk lapangan ini."),
+                              child: Text(
+                                "Belum ada ulasan untuk lapangan ini.",
+                              ),
                             ),
                           );
                         }
@@ -198,37 +205,46 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                           separatorBuilder: (_, __) => const Divider(),
                           itemBuilder: (context, index) {
                             final review = reviews[index];
-                            
+
                             // Parsing Data Aman
-                            final namaUser = review['Nama_lengkap'] ??
+                            final namaUser =
+                                review['Nama_lengkap'] ??
                                 review['nama_lengkap'] ??
                                 'Pengguna';
-                                
+
                             final rawRating =
                                 review['Rating'] ?? review['rating'] ?? 5;
                             final rating =
-                                num.tryParse(rawRating.toString())?.toInt() ?? 5;
-                                
+                                num.tryParse(rawRating.toString())?.toInt() ??
+                                5;
+
                             final komentar =
                                 review['Komentar'] ?? review['komentar'] ?? '-';
-                                
+
                             final fotoUrl = review['Foto_pengguna'];
 
                             return ListTile(
                               contentPadding: EdgeInsets.zero,
                               leading: CircleAvatar(
                                 backgroundColor: Colors.blue.shade100,
-                                backgroundImage: (fotoUrl != null &&
+                                backgroundImage:
+                                    (fotoUrl != null &&
                                         fotoUrl.toString().isNotEmpty)
                                     ? NetworkImage(
-                                        _constructDynamicUrl(fotoUrl, currentIp))
+                                        _constructDynamicUrl(
+                                          fotoUrl,
+                                          currentIp,
+                                        ),
+                                      )
                                     : null,
-                                child: (fotoUrl == null ||
+                                child:
+                                    (fotoUrl == null ||
                                         fotoUrl.toString().isEmpty)
                                     ? Text(
                                         namaUser[0].toUpperCase(),
                                         style: const TextStyle(
-                                            fontWeight: FontWeight.bold),
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       )
                                     : null,
                               ),
@@ -237,15 +253,20 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                                   Text(
                                     namaUser,
                                     style: const TextStyle(
-                                        fontWeight: FontWeight.bold),
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                   const Spacer(),
-                                  const Icon(Icons.star,
-                                      size: 16, color: Colors.orange),
+                                  const Icon(
+                                    Icons.star,
+                                    size: 16,
+                                    color: Colors.orange,
+                                  ),
                                   Text(
                                     " $rating.0",
                                     style: const TextStyle(
-                                        fontWeight: FontWeight.bold),
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -275,7 +296,7 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                     color: Colors.black12,
                     blurRadius: 10,
                     offset: Offset(0, -5),
-                  )
+                  ),
                 ],
               ),
               child: SizedBox(
@@ -292,18 +313,12 @@ class _FieldDetailScreenState extends ConsumerState<FieldDetailScreen> {
                   onPressed: () {
                     context.push(
                       '/booking/${field.id}',
-                      extra: {
-                        'name': field.nama,
-                        'price': field.hargaPerJam,
-                      },
+                      extra: {'name': field.nama, 'price': field.hargaPerJam},
                     );
                   },
                   child: const Text(
                     "BOOKING SEKARANG",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

@@ -22,9 +22,9 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isUploading = false;
 
-  // FUNGSI UPLOAD 
+  // FUNGSI UPLOAD
   Future<void> _uploadFoto() async {
-    // Cek Izin Dulu 
+    // Cek Izin Dulu
     bool photosPermission = false;
     final deviceInfo = await DeviceInfoPlugin().androidInfo;
 
@@ -78,7 +78,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
           // Update State
           ref.read(userPhotoProvider.notifier).state = newUrl;
-          await ref.read(storageProvider).write(key: 'user_photo', value: newUrl);
+          await ref
+              .read(storageProvider)
+              .write(key: 'user_photo', value: newUrl);
 
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -107,7 +109,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget build(BuildContext context) {
     final profileFuture = ref.watch(authRepositoryProvider).getUserProfile();
     final globalPhotoUrl = ref.watch(userPhotoProvider);
-    final currentIp = ref.watch(baseUrlProvider); 
+    final currentIp = ref.watch(baseUrlProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Profil Saya")),
@@ -118,7 +120,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final user = snapshot.data ??
+          final user =
+              snapshot.data ??
               UserModel(
                 id: '0',
                 namaLengkap: 'User',
@@ -132,16 +135,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ImageProvider? imageProvider;
 
           if (displayUrl != null && displayUrl.isNotEmpty) {
-            
             // Bersihkan path kalau database nyimpen 'http://localhost'
             String cleanPath = displayUrl;
             if (displayUrl.startsWith('http')) {
-               // Ambil path relatifnya saja (misal: /public/uploads/foto.jpg)
-               try {
-                 cleanPath = Uri.parse(displayUrl).path;
-               } catch (_) {}
+              // Ambil path relatifnya saja kaya /public/uploads/foto.jpg)
+              try {
+                cleanPath = Uri.parse(displayUrl).path;
+              } catch (_) {}
             }
-            
+
             // Hilangkan slash ganda di depan jika ada
             if (cleanPath.startsWith('/') && currentIp.endsWith('/')) {
               cleanPath = cleanPath.substring(1);
@@ -149,14 +151,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               cleanPath = '/$cleanPath';
             }
 
-            // Gabungkan IP HP (currentIp) + Path Gambar
+            // Gabungkan IP HP + Path Gambar
             final fullUrl = '$currentIp$cleanPath';
-            
+
             // Tambah timestamp biar gak cache
-            imageProvider = NetworkImage('$fullUrl?t=${DateTime.now().millisecondsSinceEpoch}');
-            
-            // Debugging: Cek terminal laptop untuk lihat URL final
-            print("Loading Image: $fullUrl"); 
+            imageProvider = NetworkImage(
+              '$fullUrl?t=${DateTime.now().millisecondsSinceEpoch}',
+            );
+
+            // Cek terminal laptop untuk lihat URL final
+            print("Loading Image: $fullUrl");
           }
 
           return Center(
@@ -174,21 +178,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           radius: 60,
                           backgroundColor: Colors.grey[300],
                           backgroundImage: imageProvider,
-                          
-                          // --- BAGIAN INI YANG KITA UBAH ---
+
                           onBackgroundImageError: (exception, stackTrace) {
-                            // 1. Print ke terminal (kalau lagi colok kabel)
+                            // Print ke terminal (kalau lagi colok kabel)
                             debugPrint("Error Gambar: $exception");
 
-                            // 2. Munculkan pesan di Layar HP (Biar kamu bisa baca errornya apa)
+                            // Munculkan pesan di Layar HP
                             // Kita pakai Future.microtask biar aman dari error rendering
                             Future.microtask(() {
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).hideCurrentSnackBar();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     // Tampilkan pesan error spesifik
-                                    content: Text("Gagal muat gambar: $exception"),
+                                    content: Text(
+                                      "Gagal muat gambar: $exception",
+                                    ),
                                     backgroundColor: Colors.red,
                                     duration: const Duration(seconds: 4),
                                   ),
@@ -197,13 +204,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                             });
                           },
                           child: (imageProvider == null)
-                              ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                              ? const Icon(
+                                  Icons.person,
+                                  size: 60,
+                                  color: Colors.grey,
+                                )
                               : null,
                         ),
 
                         if (_isUploading)
                           const Positioned.fill(
-                            child: CircularProgressIndicator(color: Colors.white),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
                           ),
 
                         Container(

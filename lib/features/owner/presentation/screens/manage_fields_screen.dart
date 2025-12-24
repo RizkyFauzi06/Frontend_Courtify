@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../shared/providers/dio_provider.dart'; 
+import '../../../../shared/providers/dio_provider.dart';
 import '../controllers/manage_field_controller.dart';
 import 'add_edit_field_screen.dart';
 
@@ -55,8 +55,7 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
     // Ambil data lapangan
     final fieldsAsync = ref.watch(myFieldsProvider);
 
-    // AMBIL IP DINAMIS YANG BENAR
-    // Jangan pakai dioProvider.options.baseUrl, pakai ini:
+    // AMBIL IP DINAMIS
     final currentIp = ref.watch(baseUrlProvider);
 
     return Scaffold(
@@ -141,7 +140,10 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                     final field = filteredFields[index];
 
                     // RAKIT URL GAMBAR DENGAN FUNGSI BARU
-                    final imageUrl = _constructDynamicUrl(field.coverFoto, currentIp);
+                    final imageUrl = _constructDynamicUrl(
+                      field.coverFoto,
+                      currentIp,
+                    );
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
@@ -161,7 +163,9 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                                   height: 60,
                                   fit: BoxFit.cover,
                                   errorBuilder: (ctx, err, stack) {
-                                    debugPrint("Err Lapangan: $imageUrl -> $err");
+                                    debugPrint(
+                                      "Err Lapangan: $imageUrl -> $err",
+                                    );
                                     return Container(
                                       width: 60,
                                       height: 60,
@@ -173,16 +177,21 @@ class _ManageFieldsScreenState extends ConsumerState<ManageFieldsScreen> {
                                       ),
                                     );
                                   },
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      width: 60,
-                                      height: 60,
-                                      color: Colors.grey[200],
-                                      child: const Center(
-                                          child: CircularProgressIndicator(strokeWidth: 2)),
-                                    );
-                                  },
+                                  loadingBuilder:
+                                      (context, child, loadingProgress) {
+                                        if (loadingProgress == null)
+                                          return child;
+                                        return Container(
+                                          width: 60,
+                                          height: 60,
+                                          color: Colors.grey[200],
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          ),
+                                        );
+                                      },
                                 )
                               : Container(
                                   width: 60,

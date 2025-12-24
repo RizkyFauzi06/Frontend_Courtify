@@ -136,7 +136,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             const SizedBox(height: 24),
 
             // PILIH JAM MULAI
-            // --- BAGIAN PILIH JAM MULAI (Diupdate biar reset durasi kalau kelebihan) ---
             const Text(
               "Pilih Jam Mulai",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -169,7 +168,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         const int closingHour = 23;
                         int maxDuration = closingHour - _selectedStartHour!;
 
-                        // Kalau durasi yg dipilih sebelumnya (misal 5 jam) melebihi sisa waktu
+                        // Kalau durasi yg dipilih sebelumnya melebihi sisa waktu buka
                         // Kita paksa turunkan durasi ke sisa waktu maksimal
                         if (_selectedDuration > maxDuration) {
                           _selectedDuration = maxDuration;
@@ -195,7 +194,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
             const SizedBox(height: 24),
 
-            // --- BAGIAN DURASI MAIN ---
+            // BAGIAN DURASI MAIN
             const Text(
               "Durasi Main",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -238,9 +237,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                 // TOMBOL TAMBAH (+)
                 IconButton.filledTonal(
                   onPressed: () {
-                    // LOGIKA BARU: Batas Maksimal = Sampai Jam Tutup (23:00)
                     const int closingHour = 23;
-
                     // Kalau jam belum dipilih, kasih bebas aja (misal max 12 jam)
                     // Kalau jam sudah dipilih, max = 23 - jam mulai
                     int maxDuration = _selectedStartHour == null
@@ -260,7 +257,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                         }
                       });
                     } else {
-                      // Opsional: Kasih peringatan kalau sudah mentok
+                      // Kasih peringatan kalau sudah mentok
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text("Sudah mentok jam tutup lapangan!"),

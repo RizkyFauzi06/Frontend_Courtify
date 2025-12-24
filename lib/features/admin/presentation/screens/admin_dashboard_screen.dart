@@ -59,7 +59,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   }
 }
 
-// --- WIDGET LIST PENGAJUAN OWNER
+// WIDGET LIST PENGAJUAN OWNER
 class _OwnerRequestList extends ConsumerStatefulWidget {
   const _OwnerRequestList();
 

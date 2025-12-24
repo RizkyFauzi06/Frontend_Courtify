@@ -35,7 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  // HELPER BERSIH-BERSIH URL (Untuk Foto Profil)
+  // HELPER BERSIH-BERSIH URL Untuk Foto Profil
   String? _constructDynamicUrl(String? rawPath, String currentIp) {
     if (rawPath == null || rawPath.isEmpty) return null;
 
@@ -238,8 +238,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     itemBuilder: (context, index) => FieldCard(
                       field: displayList[index],
 
-                      // [PERBAIKAN UTAMA ADA DI SINI]
-                      // Jangan kirim ID, tapi kirim OBJECT 'extra'
+                      //kirim OBJECT 'extra'
                       onTap: () => context.push(
                         '/field-detail', //
                         extra: displayList[index], // Bawa data lengkap

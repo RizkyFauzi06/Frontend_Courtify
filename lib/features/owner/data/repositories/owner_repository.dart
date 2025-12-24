@@ -13,7 +13,7 @@ class OwnerRepository {
   final Dio _dio;
   OwnerRepository(this._dio);
 
-  // 1. Get Stats Utama
+  // Get Stats Utama
   Future<DashboardStats> getStats() async {
     try {
       final response = await _dio.get('/dasbor');
@@ -23,7 +23,7 @@ class OwnerRepository {
     }
   }
 
-  // 2. Get Jam Ramai
+  // Get Jam Ramai
   Future<List<JamRamai>> getJamRamai() async {
     try {
       final response = await _dio.get('/dasbor/jam_ramai');
@@ -34,7 +34,7 @@ class OwnerRepository {
     }
   }
 
-  // 3. Get Lapangan Terlaris
+  // Get Lapangan Terlaris
   Future<List<LapanganTerlaris>> getLapanganTerlaris() async {
     try {
       final response = await _dio.get('/dasbor/lapangan_terlaris');
@@ -65,20 +65,20 @@ class OwnerRepository {
 
       return listData.map((e) => VerificationModel.fromJson(e)).toList();
     } on DioException catch (e) {
-      // JANGAN return []; -> LEMPAR ERROR BIAR KELIATAN DI HP
+      // LEMPAR ERROR BIAR KELIATAN DI HP
       throw 'Error Koneksi (${e.response?.statusCode}): ${e.message}';
     } catch (e) {
       throw 'Error Parsing: $e';
     }
   }
 
-  // --- FUNGSI VERIFIKASI (SESUAI BACKEND BARU) ---
+  // FUNGSI VERIFIKASI
   Future<void> verifyPayment(int bookingId, bool isAccepted) async {
     try {
       const url = '/owner/verifikasi_pembayaran';
       final statusString = isAccepted ? 'lunas' : 'dibatalkan';
 
-      // 3. Kirim Body JSON sesuai Backend baru
+      // Kirim Body JSON sesuai Backend baru
       final body = {
         'Id_pemesanan': bookingId,
         'Status': statusString, // Backend minta 'lunas' atau 'dibatalkan'
@@ -94,24 +94,25 @@ class OwnerRepository {
     }
   }
 
-  // --- A. GET MY FIELDS (Lapangan Saya) ---
+  // GET MY FIELDS (Lapangan Saya)
   Future<List<FieldModel>> getMyFields({String query = ''}) async {
     try {
       // Kirim parameter ?search=... ke backend
-      final response = await _dio.get('/lapangan', queryParameters: {
-        'search': query,
-      });
-      
+      final response = await _dio.get(
+        '/lapangan',
+        queryParameters: {'search': query},
+      );
+
       final dynamic rawData = response.data;
       List listData = (rawData is Map) ? rawData['data'] : rawData;
-      
+
       return listData.map((e) => FieldModel.fromJson(e)).toList();
     } catch (e) {
       return [];
     }
   }
 
-  // --- B. CREATE FIELD (Tambah Lapangan) ---
+  // CREATE FIELD (Tambah Lapangan)
   Future<int> createField(Map<String, dynamic> data) async {
     try {
       final response = await _dio.post('/lapangan', data: data);
@@ -121,7 +122,7 @@ class OwnerRepository {
     }
   }
 
-  // --- C. UPLOAD PHOTO (Foto Lapangan) ---
+  // UPLOAD PHOTO (Foto Lapangan)
   Future<void> uploadFieldPhoto(int fieldId, String filePath) async {
     try {
       final url = '/lapangan/$fieldId/upload_foto'; // Sesuaikan Backend
@@ -134,7 +135,7 @@ class OwnerRepository {
     }
   }
 
-  // --- D. DELETE FIELD ---
+  // DELETE FIELD
   Future<void> deleteField(int fieldId) async {
     try {
       await _dio.delete('/lapangan/$fieldId');
@@ -143,7 +144,7 @@ class OwnerRepository {
     }
   }
 
-  // --- E. UPDATE FIELD ---
+  // UPDATE FIELD
   Future<void> updateField(int fieldId, Map<String, dynamic> data) async {
     try {
       await _dio.put('/lapangan/$fieldId', data: data);

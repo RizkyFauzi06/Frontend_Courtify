@@ -4,27 +4,23 @@ import 'package:intl/intl.dart';
 import 'package:frontend_futsal/shared/providers/dio_provider.dart';
 import '../../data/models/field_model.dart';
 
-// Ubah jadi ConsumerWidget
 class FieldCard extends ConsumerWidget {
   final FieldModel field;
   final VoidCallback onTap;
 
   const FieldCard({super.key, required this.field, required this.onTap});
 
-  // Tambah WidgetRef ref
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Ambil warna primer dari tema Courtify
     final primaryColor = Theme.of(context).colorScheme.primary;
-
-    // Format uang jadi Rp 100.000
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
       decimalDigits: 0,
     );
 
-    // --- LOGIKA IP DINAMIS
+    // LOGIKA IP DINAMIS
     // Minta alamat IP terbaru dari Provider
     final currentBaseUrl = ref.watch(baseUrlProvider);
 
@@ -33,15 +29,16 @@ class FieldCard extends ConsumerWidget {
         ? currentBaseUrl.substring(0, currentBaseUrl.length - 1)
         : currentBaseUrl;
 
-    String imagePath = field.coverFoto; // misal: "http://localhost:8000/public/foto.jpg"
+    String imagePath =
+        field.coverFoto; // misal: "http://localhost:8000/public/foto.jpg"
     if (imagePath.startsWith('http')) {
-        imagePath = Uri.parse(imagePath).path; // jadi: "/public/foto.jpg"
+      imagePath = Uri.parse(imagePath).path; // jadi: "/public/foto.jpg"
     }
     // Hapus slash depan kalau double
     if (imagePath.startsWith('/') && cleanBaseUrl.endsWith('/')) {
-         imagePath = imagePath.substring(1);
+      imagePath = imagePath.substring(1);
     } else if (!imagePath.startsWith('/') && !cleanBaseUrl.endsWith('/')) {
-         imagePath = '/$imagePath';
+      imagePath = '/$imagePath';
     }
 
     // Rakit URL Gambar yang benar

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart'; // Wajib import ini
+import 'package:image_picker/image_picker.dart'; // Wajib import ini untuk gambar
 import '../../data/repositories/booking_repository.dart';
 import 'package:flutter/services.dart';
 
@@ -109,9 +109,8 @@ class _UploadPaymentScreenState extends ConsumerState<UploadPaymentScreen> {
                             "BCA (Bank Central Asia)",
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          // GANTI teks Hardcode dengan variable
                           Text(
-                            widget.rekeningTujuan, // <--- Pake variable ini
+                            widget.rekeningTujuan,
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,

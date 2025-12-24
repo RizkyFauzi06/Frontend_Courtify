@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../shared/providers/storage_provider.dart';
 
-// Ubah jadi ConsumerStatefulWidget biar punya initState (Logika saat lahir)
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -20,14 +19,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    print('⏰ [SPLASH] Mulai hitung mundur 3 detik...');
+    print('[SPLASH] Mulai hitung mundur 3 detik...');
 
     // Tahan 3 Detik
     await Future.delayed(const Duration(seconds: 3));
-    print('✅ [SPLASH] Selesai nunggu. Sekarang cek token...');
+    print('[SPLASH] Selesai nunggu. Sekarang cek token...');
 
     if (!mounted) {
-      print('❌ [SPLASH] Widget sudah mati (unmounted). Batal navigasi.');
+      print('[SPLASH] Widget sudah mati (unmounted). Batal navigasi.');
       return;
     }
 
@@ -35,20 +34,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       // Cek Token
       final storage = ref.read(storageProvider);
 
-      print('🔍 [SPLASH] Sedang membaca storage...');
+      print('[SPLASH] Sedang membaca storage...');
       final token = await storage.read(key: 'token');
-      print('🔑 [SPLASH] Token ditemukan: $token');
+      print('[SPLASH] Token ditemukan: $token');
 
       // Pindah Halaman
       if (token != null) {
-        print('🚀 [SPLASH] Pindah ke HOME');
+        print(' [SPLASH] Pindah ke HOME');
         if (mounted) context.go('/home');
       } else {
-        print('🚀 [SPLASH] Pindah ke LOGIN');
+        print('[SPLASH] Pindah ke LOGIN');
         if (mounted) context.go('/login');
       }
     } catch (e) {
-      print('🔥 [SPLASH ERROR] Gagal baca token: $e');
+      print(' [SPLASH ERROR] Gagal baca token: $e');
       // Kalau error, lempar ke Login aja biar gak stuck
       if (mounted) context.go('/login');
     }
@@ -59,7 +58,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     const primaryColor = Color(0xFF2962FF);
 
     return Scaffold(
-      backgroundColor: Colors.white, // WAJIB PUTIH (Biar gak hitam)
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

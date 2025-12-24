@@ -15,8 +15,6 @@ class MembershipRepository {
   Future<List<MembershipModel>> getMemberships() async {
     try {
       final response = await _dio.get('/membership');
-
-      // Backend return: {'data': [...]}
       final List data = response.data['data'] ?? [];
 
       return data.map((e) => MembershipModel.fromJson(e)).toList();

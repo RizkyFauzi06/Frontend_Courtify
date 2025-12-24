@@ -31,7 +31,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
     final token = await storage.read(
       key: 'token',
-    ); ////daptin token dari local storage
+    ); //daptin token dari local storage
     final loggedIn = token != null; // cek token
     final isLogin = state.matchedLocation == '/login';
     final isRegister = state.matchedLocation == '/register';

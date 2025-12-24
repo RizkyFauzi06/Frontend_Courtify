@@ -13,7 +13,6 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
   AuthController(this._repository) : super(const AsyncData(null));
 
   // Fungsi Login
-  // Di auth_controller.dart
   Future<String?> login(String email, String password) async {
     state = const AsyncLoading(); // Mulai Loading
     try {
@@ -30,7 +29,7 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  // Fungsi Register (BARU)
+  // Fungsi Register
   Future<void> register(String nama, String email, String password) async {
     state = const AsyncLoading();
     try {

@@ -29,7 +29,7 @@ class AdminRepository {
     }
   }
 
-  // APPROVE / REJECT (POST)
+  // APPROVE REQUEST
   Future<void> approveRequest(int idPengajuan) async {
     try {
       final url = '/admin/setujui_pengajuan'; // url backend
@@ -53,8 +53,7 @@ class AdminRepository {
   }
 
   Future<List<MemberVerificationModel>> getPendingMembers() async {
-    const url =
-        '/admin/verifikasi_membership'; // Pastikan nama file backend sama
+    const url = '/admin/verifikasi_membership';
 
     try {
       print('--- [DEBUG ADMIN] REQUEST KE: $url ---');
@@ -62,9 +61,7 @@ class AdminRepository {
       final response = await _dio.get(url);
 
       print('--- [DEBUG ADMIN] STATUS: ${response.statusCode} ---');
-      print(
-        '--- [DEBUG ADMIN] DATA RAW: ${response.data} ---',
-      ); // <--- LIHAT INI
+      print('--- [DEBUG ADMIN] DATA RAW: ${response.data} ---');
 
       final List data = response.data['data'] ?? [];
 
@@ -76,13 +73,13 @@ class AdminRepository {
       }
 
       return data.map((e) {
-        print('Parsing item: $e'); // Cek item mana yang bikin crash
+        print('Parsing item: $e'); // Cek mana yang bikin crash
         return MemberVerificationModel.fromJson(e);
       }).toList();
     } catch (e, stack) {
       print('[CRITICAL ERROR] ADMIN REPO: $e');
       print(stack);
-      // Jangan return kosong, lempar error biar muncul di layar HP
+      // lempar error biar muncul di layar HP
       throw e.toString();
     }
   }

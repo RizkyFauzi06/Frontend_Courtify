@@ -9,10 +9,10 @@ final fieldDetailControllerProvider =
       // Ambil repository
       final repo = ref.watch(fieldRepositoryProvider);
 
-      // Panggil 2 fungsi API secara paralel (Detail Lapangan)
+      // Panggil fungsi API (Detail Lapangan)
       final fieldFuture = repo.getFieldDetail(fieldId);
 
-      // Tunggu keduanya selesai
+      // Tunggu selesai
       final field = await fieldFuture;
 
       // Kembalikan hasilnya dalam satu paket (Map)

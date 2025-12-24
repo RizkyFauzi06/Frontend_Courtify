@@ -48,19 +48,19 @@ class BookingRepository {
   //  FUNGSI UPLOAD BUKTI BAYAR
   Future<void> uploadPaymentProof(int bookingId, String filePath) async {
     try {
-      // URL Dinamis sesuai folder backend: routes/pemesanan/[id]/upload_bukti.dart
+      // URL sesuai folder backend routes/pemesanan/[id]/upload_bukti.dart
       final url = '/pemesanan/$bookingId/upload_bukti';
 
       final formData = FormData.fromMap({
         'bukti': await MultipartFile.fromFile(filePath),
       });
 
-      log('--- UPLOAD REQUEST ---');
+      log('UPLOAD REQUEST ');
       // log('URL: ${AppConstants.baseUrl}$url'); // Hapus ini biar gak bingung log-nya
-      log('Target Endpoint: $url'); 
+      log('Target Endpoint: $url');
 
       await _dio.post(url, data: formData);
-      log('--- UPLOAD SUCCESS ---');
+      log('UPLOAD SUCCESS');
     } on DioException catch (e) {
       String msg = 'Gagal Upload.';
       if (e.response != null) {
@@ -129,7 +129,7 @@ class BookingRepository {
     try {
       final url = '/ulasan';
 
-      // Body JSON Sesuai Backend Kamu (PascalCase)
+      // Body JSON Sesuai Backend Kamu
       final body = {
         'Id_lapangan': fieldId,
         'Rating': rating,

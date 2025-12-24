@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend_futsal/features/field/data/models/field_model.dart';
 import 'package:frontend_futsal/features/field/data/repositories/field_repository.dart';
 
-// Pastikan tipe datanya: <FieldListController, AsyncValue<List<FieldModel>>>
 final fieldListControllerProvider =
     StateNotifierProvider<FieldListController, AsyncValue<List<FieldModel>>>((
       ref,
@@ -16,7 +15,7 @@ final fieldListControllerProvider =
 class FieldListController extends StateNotifier<AsyncValue<List<FieldModel>>> {
   final FieldRepository _repository;
 
-  // Constructor: Langsung panggil getFields saat controller dibuat
+  // Langsung panggil getFields saat controller dibuat
   FieldListController(this._repository) : super(const AsyncLoading()) {
     getFields();
   }

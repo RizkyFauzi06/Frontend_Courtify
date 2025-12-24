@@ -130,7 +130,6 @@ class MembershipScreen extends ConsumerWidget {
                 cardColor = const Color(
                   0xFFCD7F32,
                 ).withOpacity(0.3); // Perunggu Muda
-              // ------------------------------
               return Card(
                 color: cardColor,
                 margin: const EdgeInsets.only(bottom: 16),
@@ -196,7 +195,7 @@ class MembershipScreen extends ConsumerWidget {
           );
         }
 
-        // AMBIL NAMA FILE MANUAL (Anti 400)
+        // AMBIL NAMA FILE MANUAL
         String fileName = picked.path.split('/').last;
 
         print('--- [DEBUG] 3. Mulai Upload ---');

@@ -3,6 +3,7 @@ import '../../data/models/membership_model.dart';
 import '../../data/repositories/membership_repository.dart';
 
 // Provider untuk List Paket
-final membershipListProvider = FutureProvider.autoDispose<List<MembershipModel>>((ref) {
-  return ref.watch(membershipRepositoryProvider).getMemberships();
-});
+final membershipListProvider =
+    FutureProvider.autoDispose<List<MembershipModel>>((ref) {
+      return ref.watch(membershipRepositoryProvider).getMemberships();
+    });

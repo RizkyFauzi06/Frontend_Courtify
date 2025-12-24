@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../../../shared/providers/dio_provider.dart'; 
+import '../../../../shared/providers/dio_provider.dart';
 import '../../data/repositories/owner_repository.dart';
 import '../controllers/dashboard_controller.dart';
 
@@ -13,7 +13,6 @@ class VerificationScreen extends ConsumerStatefulWidget {
 }
 
 class _VerificationScreenState extends ConsumerState<VerificationScreen> {
-
   // HELPER BERSIH-BERSIH URL
   String _constructDynamicUrl(String rawPath, String currentIp) {
     if (rawPath.isEmpty) return '';
@@ -34,7 +33,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       cleanPath = cleanPath.substring(7);
     }
 
-    // 3. Rapikan Slash
+    // Rapikan Slash
     if (cleanPath.startsWith('/') && currentIp.endsWith('/')) {
       cleanPath = cleanPath.substring(1);
     } else if (!cleanPath.startsWith('/') && !currentIp.endsWith('/')) {
@@ -44,7 +43,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
     return '$currentIp$cleanPath';
   }
 
-  // FITUR ZOOM (Bisa dicubit/pinch)
+  // FITUR ZOOM Bisa dicubit/pinch
   void _showZoomImage(BuildContext context, String imageUrl) {
     showDialog(
       context: context,
@@ -64,7 +63,10 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                   imageUrl,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) => const Center(
-                    child: Text("Gagal Zoom", style: TextStyle(color: Colors.white)),
+                    child: Text(
+                      "Gagal Zoom",
+                      style: TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
               ),
@@ -94,9 +96,9 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
       symbol: 'Rp ',
       decimalDigits: 0,
     );
-    
+
     final repo = ref.watch(ownerRepositoryProvider);
-    
+
     //AMBIL IP DINAMIS DARI LOGIN
     final currentIp = ref.watch(baseUrlProvider);
 
@@ -112,7 +114,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
             return Center(child: Text("Error: ${snapshot.error}"));
           }
 
-          final list = snapshot.data as List; 
+          final list = snapshot.data as List;
 
           if (list.isEmpty) {
             return const Center(
@@ -164,16 +166,26 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                               width: double.infinity,
                               height: 200,
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(child: CircularProgressIndicator());
-                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
                               errorBuilder: (context, error, stackTrace) {
                                 return const Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.broken_image, size: 40, color: Colors.grey),
-                                    Text("Bukti Gagal Dimuat", style: TextStyle(color: Colors.grey)),
+                                    Icon(
+                                      Icons.broken_image,
+                                      size: 40,
+                                      color: Colors.grey,
+                                    ),
+                                    Text(
+                                      "Bukti Gagal Dimuat",
+                                      style: TextStyle(color: Colors.grey),
+                                    ),
                                   ],
                                 );
                               },
@@ -191,9 +203,19 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.zoom_in, color: Colors.white, size: 16),
+                                    Icon(
+                                      Icons.zoom_in,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
                                     SizedBox(width: 4),
-                                    Text("Zoom", style: TextStyle(color: Colors.white, fontSize: 12)),
+                                    Text(
+                                      "Zoom",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -237,7 +259,7 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                                 child: OutlinedButton(
                                   onPressed: () async {
                                     await repo.verifyPayment(item.id, false);
-                                    setState(() {}); 
+                                    setState(() {});
                                   },
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.red,
@@ -252,13 +274,17 @@ class _VerificationScreenState extends ConsumerState<VerificationScreen> {
                                 child: ElevatedButton(
                                   onPressed: () async {
                                     await repo.verifyPayment(item.id, true);
-                                    setState(() {}); 
+                                    setState(() {});
 
                                     // Refresh Dashboard
-                                    ref.refresh(ownerDashboardControllerProvider);
-                                    
+                                    ref.refresh(
+                                      ownerDashboardControllerProvider,
+                                    );
+
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
                                           content: Text("Pembayaran Diterima!"),
                                           backgroundColor: Colors.green,

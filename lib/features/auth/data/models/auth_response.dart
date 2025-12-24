@@ -7,14 +7,14 @@ class AuthResponseModel {
   AuthResponseModel({required this.token, required this.user});
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
-    // Ambil Token (Kalau null, ganti string kosong biar gak crash)
+    // Ambil Token Kalau null, ganti string kosong biar gak crash
     final tokenData = json['token']?.toString() ?? '';
 
     // Cek apakah ada data user?
     var userData = json['user'] ?? json['data'];
 
     // Kalau userData itu NULL, kita buat User Dummy.
-    // Ini biar kamu BISA MASUK HOME dulu.
+    // biar BISA MASUK HOME dulu.
     if (userData == null || userData is! Map<String, dynamic>) {
       return AuthResponseModel(
         token: tokenData,

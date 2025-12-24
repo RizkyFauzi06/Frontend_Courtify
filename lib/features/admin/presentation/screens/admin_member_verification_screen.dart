@@ -30,7 +30,7 @@ class _AdminMemberVerificationScreenState
     });
   }
 
-  // Helper untuk membersihkan URL (Sama seperti di Profil)
+  // Helper untuk membersihkan URL
   String? _constructDynamicUrl(String? rawPath, String currentIp) {
     if (rawPath == null || rawPath.isEmpty) return null;
 
@@ -139,7 +139,7 @@ class _AdminMemberVerificationScreenState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- BAGIAN FOTO ---
+                        // BAGIAN FOTO
                         if (finalUrl != null)
                           GestureDetector(
                             onTap: () {
